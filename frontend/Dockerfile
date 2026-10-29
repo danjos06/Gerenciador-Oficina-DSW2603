@@ -16,6 +16,6 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/gerar-env.sh /docker-entrypoint.d/40-gerar-env.sh
 RUN chmod +x /docker-entrypoint.d/40-gerar-env.sh
 
-COPY --from=build /app/dist/diario-web/browser /usr/share/nginx/html
+COPY --from=build /app/dist/oficina/browser /usr/share/nginx/html
 
 EXPOSE 80
