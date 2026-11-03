@@ -1,4 +1,4 @@
-package br.senac.diario.util;
+package oficina.gerenciador.app.util;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
