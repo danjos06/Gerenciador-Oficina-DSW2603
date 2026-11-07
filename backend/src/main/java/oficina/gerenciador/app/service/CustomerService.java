@@ -59,7 +59,9 @@ public class CustomerService {
     }
 
     @Transactional
-    public CustomerEntity update(CustomerEntity customer) {
+    public CustomerEntity update(int id, CustomerEntity customer) {
+        repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
+
         if (customer == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente.");
         }
@@ -77,7 +79,13 @@ public class CustomerService {
             customer.setActive(true);
         }
 
+        customer.setId(id);
         return repository.save(customer);
     }
 
+    @Transactional
+    public void delete(int id) {
+        CustomerEntity customer = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
+        repository.delete(customer);
+    }
 }
