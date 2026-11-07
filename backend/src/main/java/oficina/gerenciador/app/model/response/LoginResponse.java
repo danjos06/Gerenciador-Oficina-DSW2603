@@ -16,5 +16,5 @@ public class LoginResponse {
     @Builder.Default
     private String tipo = "Bearer";
 
-    private UserResponse usuario;
+    private UsuarioResponse usuario;
 }

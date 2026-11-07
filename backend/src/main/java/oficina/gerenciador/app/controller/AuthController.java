@@ -3,9 +3,9 @@ package oficina.gerenciador.app.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import oficina.gerenciador.app.model.request.LoginRequest;
 import oficina.gerenciador.app.model.response.LoginResponse;
-import oficina.gerenciador.app.model.response.UserResponse;
+import oficina.gerenciador.app.model.response.UsuarioResponse;
 import oficina.gerenciador.app.service.AuthService;
-import oficina.gerenciador.app.service.UserService;
+import oficina.gerenciador.app.service.UsuarioService;
 import oficina.gerenciador.app.util.AuthInterceptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +19,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserService userService;
+    private final UsuarioService usuarioService;
 
-    public AuthController(AuthService authService, UserService userService) {
+    public AuthController(AuthService authService, UsuarioService usuarioService) {
         this.authService = authService;
-        this.userService = userService;
+        this.usuarioService = usuarioService;
     }
 
     @PostMapping({"/auth/login", "/login"})
@@ -33,11 +33,11 @@ public class AuthController {
     }
 
     @GetMapping("/auth/me")
-    public ResponseEntity<UserResponse> me(HttpServletRequest request) {
+    public ResponseEntity<UsuarioResponse> me(HttpServletRequest request) {
         Integer usuarioId = (Integer) request.getAttribute(AuthInterceptor.ATRIBUTO_USUARIO_ID);
         if (usuarioId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Não autenticado");
         }
-        return ResponseEntity.ok(userService.getUserById(usuarioId));
+        return ResponseEntity.ok(usuarioService.buscarUsuarioPorId(usuarioId));
     }
 }

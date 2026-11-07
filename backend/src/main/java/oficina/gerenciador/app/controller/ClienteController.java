@@ -5,8 +5,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import oficina.gerenciador.app.model.entity.CustomerEntity;
-import oficina.gerenciador.app.service.CustomerService;
+import oficina.gerenciador.app.model.entity.ClienteEntity;
+import oficina.gerenciador.app.service.ClienteService;
 
 import java.util.List;
 
@@ -18,39 +18,37 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-
-@RestController 
-@RequestMapping("/customers")
-@RequiredArgsConstructor 
-public class CustomerController {
-    private final CustomerService service;
+@RestController
+@RequestMapping("/clientes")
+@RequiredArgsConstructor
+public class ClienteController {
+    private final ClienteService service;
 
     @GetMapping
-    public List<CustomerEntity> listAll(){
-        return service.listAll();
+    public List<ClienteEntity> listarTodos() {
+        return service.listarTodos();
     }
-    
-    @GetMapping("/{phone}")
-    public CustomerEntity findByPhone(@PathVariable String phone) {
-        return service.findByPhone(phone);
+
+    @GetMapping("/{telefone}")
+    public ClienteEntity buscarPorTelefone(@PathVariable String telefone) {
+        return service.buscarPorTelefone(telefone);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CustomerEntity add(@RequestBody CustomerEntity customer) {
-        return service.add(customer);
+    public ClienteEntity adicionar(@RequestBody ClienteEntity cliente) {
+        return service.adicionar(cliente);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public CustomerEntity update(@PathVariable int id, @RequestBody CustomerEntity customer) {
-        return service.update(id, customer);
+    public ClienteEntity atualizar(@PathVariable int id, @RequestBody ClienteEntity cliente) {
+        return service.atualizar(id, cliente);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable int id) {
-        service.delete(id);
+    public void deletar(@PathVariable int id) {
+        service.deletar(id);
     }
 }
-

@@ -1,10 +1,10 @@
 package oficina.gerenciador.app.service;
 
-import oficina.gerenciador.app.model.entity.UserEntity;
+import oficina.gerenciador.app.model.entity.UsuarioEntity;
 import oficina.gerenciador.app.model.request.LoginRequest;
 import oficina.gerenciador.app.model.response.LoginResponse;
-import oficina.gerenciador.app.model.response.UserResponse;
-import oficina.gerenciador.app.repository.UserRepository;
+import oficina.gerenciador.app.model.response.UsuarioResponse;
+import oficina.gerenciador.app.repository.UsuarioRepository;
 import oficina.gerenciador.app.util.JwtUtil;
 import oficina.gerenciador.app.util.Md5Util;
 import org.springframework.http.HttpStatus;
@@ -16,11 +16,11 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
 
-    public AuthService(UserRepository userRepository, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
+    public AuthService(UsuarioRepository usuarioRepository, JwtUtil jwtUtil) {
+        this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -33,33 +33,33 @@ public class AuthService {
         String senha = request.getSenha().trim();
 
         // Busca pelo email
-        Optional<UserEntity> userOpt = userRepository.findByEmailIgnoreCase(login);
+        Optional<UsuarioEntity> usuarioOpt = usuarioRepository.buscarPorEmailIgnorandoCase(login);
 
         // Se não encontrar e o login informado for "admin" ou variação com admin, busca o usuário com perfil admin
-        if (userOpt.isEmpty() && (login.equalsIgnoreCase("admin") || login.toLowerCase().startsWith("admin@"))) {
-            userOpt = userRepository.findFirstByRoleIgnoreCaseAndActiveTrue("admin");
+        if (usuarioOpt.isEmpty() && (login.equalsIgnoreCase("admin") || login.toLowerCase().startsWith("admin@"))) {
+            usuarioOpt = usuarioRepository.buscarPrimeiroPorPerfilIgnorandoCaseEAtivoTrue("admin");
         }
 
-        if (userOpt.isEmpty()) {
+        if (usuarioOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
         }
 
-        UserEntity user = userOpt.get();
+        UsuarioEntity usuario = usuarioOpt.get();
 
-        if (Boolean.FALSE.equals(user.getActive())) {
+        if (Boolean.FALSE.equals(usuario.getAtivo())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário inativo");
         }
 
         String senhaHash = Md5Util.hash(senha);
-        if (!senhaHash.equalsIgnoreCase(user.getPasswordHash())) {
+        if (!senhaHash.equalsIgnoreCase(usuario.getSenhaHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
         }
 
-        String token = jwtUtil.gerarToken(user.getId(), user.getEmail(), user.getRole(), user.getName());
+        String token = jwtUtil.gerarToken(usuario.getId(), usuario.getEmail(), usuario.getPerfil(), usuario.getNome());
         return LoginResponse.builder()
                 .token(token)
                 .tipo("Bearer")
-                .usuario(UserResponse.fromEntity(user))
+                .usuario(UsuarioResponse.deEntidade(usuario))
                 .build();
     }
 }

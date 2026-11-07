@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateUserRequest {
+public class CriarUsuarioRequest {
 
-    @JsonAlias({"name", "nome"})
-    private String name;
+    @JsonAlias({"nome", "name"})
+    private String nome;
 
     @JsonAlias({"email", "login"})
     private String email;
@@ -21,8 +21,9 @@ public class CreateUserRequest {
     @JsonAlias({"senha", "password"})
     private String senha;
 
-    @JsonAlias({"role", "perfil"})
-    private String role; // "admin" | "operational"
+    @JsonAlias({"perfil", "role"})
+    private String perfil; // "admin" | "operational"
 
-    private Boolean active;
+    @JsonAlias({"ativo", "active"})
+    private Boolean ativo;
 }

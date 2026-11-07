@@ -9,9 +9,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "tb_customer",
+        name = "tb_cliente",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_customer_cpf_cnpj", columnNames = "cpf_cnpj")
+                @UniqueConstraint(name = "uk_cliente_cpf_cnpj", columnNames = "cpf_cnpj")
         }
 )
 @Getter
@@ -19,18 +19,18 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CustomerEntity {
+public class ClienteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "name", nullable = false, length = 150)
-    private String name;
+    @Column(name = "nome", nullable = false, length = 150)
+    private String nome;
 
-    @Column(name = "phone", nullable = false, length = 20)
-    private String phone;
+    @Column(name = "telefone", nullable = false, length = 20)
+    private String telefone;
 
     @Column(name = "cpf_cnpj", length = 18, unique = true)
     private String cpfCnpj;
@@ -38,18 +38,18 @@ public class CustomerEntity {
     @Column(name = "email", length = 150)
     private String email;
 
-    @Column(name = "address", length = 255)
-    private String address;
+    @Column(name = "endereco", length = 255)
+    private String endereco;
 
-    @Column(name = "active", nullable = false)
+    @Column(name = "ativo", nullable = false)
     @Builder.Default
-    private Boolean active = true;
+    private Boolean ativo = true;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private LocalDateTime criadoEm;
 
     @UpdateTimestamp
-    @Column(name = "modified_at")
-    private LocalDateTime modifiedAt;
+    @Column(name = "modificado_em")
+    private LocalDateTime modificadoEm;
 }
