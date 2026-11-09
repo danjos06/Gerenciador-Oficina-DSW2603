@@ -28,9 +28,19 @@ public class VeiculoController {
         return service.listarTodos();
     }
 
+    @GetMapping("/id/{id}")
+    public VeiculoEntity buscarPorId(@PathVariable int id) {
+        return service.buscarPorId(id);
+    }
+
     @GetMapping("/{placa}")
     public VeiculoEntity buscarPorPlaca(@PathVariable String placa) {
         return service.buscarPorPlaca(placa);
+    }
+
+    @GetMapping("/cliente/{clienteId}")
+    public List<VeiculoEntity> listarPorCliente(@PathVariable int clienteId) {
+        return service.listarPorCliente(clienteId);
     }
 
     @PostMapping
@@ -40,13 +50,14 @@ public class VeiculoController {
     }
 
     @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
     public VeiculoEntity atualizar(@PathVariable int id, @RequestBody VeiculoEntity veiculo) {
         return service.atualizar(id, veiculo);
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable int id) {
         service.deletar(id);
     }
-
 }

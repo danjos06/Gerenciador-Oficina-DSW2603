@@ -4,12 +4,13 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import oficina.gerenciador.app.model.entity.VeiculoEntity;
 import oficina.gerenciador.app.repository.VeiculoRepository;
 
-@Service 
+@Service
 public class VeiculoService {
     private final VeiculoRepository repository;
 
@@ -17,15 +18,29 @@ public class VeiculoService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<VeiculoEntity> listarTodos() {
         return repository.findAll();
     }
 
-    public VeiculoEntity buscarPorPlaca(String placa) {
-        return repository.findByPlaca(placa)
-                .orElseThrow(() -> new RuntimeException("Veículo não encontrado para a placa: " + placa));
+    @Transactional(readOnly = true)
+    public VeiculoEntity buscarPorId(int id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veículo não encontrado para o ID: " + id));
     }
 
+    @Transactional(readOnly = true)
+    public VeiculoEntity buscarPorPlaca(String placa) {
+        return repository.findByPlaca(placa)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veículo não encontrado para a placa: " + placa));
+    }
+
+    @Transactional(readOnly = true)
+    public List<VeiculoEntity> listarPorCliente(int clienteId) {
+        return repository.findByClienteId(clienteId);
+    }
+
+    @Transactional
     public VeiculoEntity adicionar(VeiculoEntity veiculo) {
         if (veiculo == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente.");
@@ -43,7 +58,7 @@ public class VeiculoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'modelo' é obrigatório.");
         }
 
-        if(veiculo.getCliente() == null || veiculo.getCliente().getId() == null) {
+        if (veiculo.getCliente() == null || veiculo.getCliente().getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'cliente' é obrigatório.");
         }
 
@@ -59,10 +74,12 @@ public class VeiculoService {
         return repository.save(veiculo);
     }
 
+    @Transactional
     public VeiculoEntity atualizar(int id, VeiculoEntity veiculo) {
-        VeiculoEntity veiculoExistente = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veículo não encontrado para o ID: " + id));
+        VeiculoEntity veiculoExistente = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veículo não encontrado para o ID: " + id));
 
-        if(veiculo == null) {
+        if (veiculo == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente.");
         }
 
@@ -86,17 +103,22 @@ public class VeiculoService {
             veiculoExistente.setCor(veiculo.getCor());
         }
 
+        if (veiculo.getCliente() != null && veiculo.getCliente().getId() != null) {
+            veiculoExistente.setCliente(veiculo.getCliente());
+        }
+
         if (veiculo.getAtivo() != null) {
             veiculoExistente.setAtivo(veiculo.getAtivo());
         }
-        
+
         return repository.save(veiculoExistente);
     }
 
+    @Transactional
     public void deletar(int id) {
         VeiculoEntity veiculoExistente = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veículo não encontrado para o ID: " + id));
-        repository.delete(veiculoExistente);
+        veiculoExistente.setAtivo(false);
+        repository.save(veiculoExistente);
     }
-
 }

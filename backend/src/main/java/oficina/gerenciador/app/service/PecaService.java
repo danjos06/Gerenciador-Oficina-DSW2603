@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import oficina.gerenciador.app.model.entity.PecaEntity;
@@ -17,24 +18,29 @@ public class PecaService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<PecaEntity> listarTodos() {
         return repository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public PecaEntity buscarPorId(int id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Peça não encontrada para o ID: " + id));
     }
 
+    @Transactional(readOnly = true)
     public PecaEntity buscarPorCodigo(String codigo) {
         return repository.findByCodigo(codigo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Peça não encontrada para o código: " + codigo));
     }
 
+    @Transactional(readOnly = true)
     public List<PecaEntity> listarPorNome(String nome) {
         return repository.findByNomeContainingIgnoreCase(nome);
     }
 
+    @Transactional
     public PecaEntity adicionar(PecaEntity peca) {
         if (peca == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente.");
@@ -61,6 +67,7 @@ public class PecaService {
         return repository.save(peca);
     }
 
+    @Transactional
     public PecaEntity atualizar(int id, PecaEntity peca) {
         PecaEntity pecaExistente = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Peça não encontrada para o ID: " + id));
@@ -88,9 +95,11 @@ public class PecaService {
         return repository.save(pecaExistente);
     }
 
+    @Transactional
     public void deletar(int id) {
         PecaEntity pecaExistente = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Peça não encontrada para o ID: " + id));
-        repository.delete(pecaExistente);
+        pecaExistente.setAtivo(false);
+        repository.save(pecaExistente);
     }
 }

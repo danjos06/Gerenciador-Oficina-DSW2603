@@ -29,7 +29,7 @@ public class ClienteController {
         return service.listarTodos();
     }
 
-    @GetMapping("/telefone/{telefone}")
+    @GetMapping("/tel/{telefone}")
     public ClienteEntity buscarPorTelefone(@PathVariable String telefone) {
         return service.buscarPorTelefone(telefone);
     }
@@ -39,7 +39,7 @@ public class ClienteController {
         return service.buscarPorCpfCnpj(cpfCnpj);
     }
 
-    @GetMapping("/nome/{nome}")
+    @GetMapping("{nome}")
     public List<ClienteEntity> listarPorNome(@PathVariable String nome) {
         return service.listarPorNome(nome);
     }

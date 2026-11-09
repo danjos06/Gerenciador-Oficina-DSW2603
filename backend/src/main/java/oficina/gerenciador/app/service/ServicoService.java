@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import oficina.gerenciador.app.model.entity.ServicoEntity;
@@ -17,19 +18,23 @@ public class ServicoService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<ServicoEntity> listarTodos() {
         return repository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public ServicoEntity buscarPorId(int id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado para o ID: " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<ServicoEntity> listarPorNome(String nome) {
         return repository.findByNomeContainingIgnoreCase(nome);
     }
 
+    @Transactional
     public ServicoEntity adicionar(ServicoEntity servico) {
         if (servico == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente.");
@@ -58,6 +63,7 @@ public class ServicoService {
         return repository.save(servico);
     }
 
+    @Transactional
     public ServicoEntity atualizar(int id, ServicoEntity servico) {
         ServicoEntity servicoExistente = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado para o ID: " + id));
@@ -89,9 +95,11 @@ public class ServicoService {
         return repository.save(servicoExistente);
     }
 
+    @Transactional
     public void deletar(int id) {
         ServicoEntity servicoExistente = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Serviço não encontrado para o ID: " + id));
-        repository.delete(servicoExistente);
+        servicoExistente.setAtivo(false);
+        repository.save(servicoExistente);
     }
 }

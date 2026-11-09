@@ -1,5 +1,6 @@
 package oficina.gerenciador.app.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class OrdemItemServicoEntity {
 
     @Id
@@ -20,11 +22,11 @@ public class OrdemItemServicoEntity {
     @Column(name = "id")
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ordem_id", nullable = false, foreignKey = @ForeignKey(name = "fk_ordem_servico_ordem"))
     private OrdemServicoEntity ordem;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "servico_id", nullable = false, foreignKey = @ForeignKey(name = "fk_ordem_servico_item"))
     private ServicoEntity servico;
 
