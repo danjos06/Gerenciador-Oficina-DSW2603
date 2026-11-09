@@ -65,27 +65,30 @@ public class ClienteService {
 
     @Transactional
     public ClienteEntity atualizar(int id, ClienteEntity cliente) {
-        repository.findById(id)
+        ClienteEntity clienteExistente = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
 
         if (cliente == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente.");
         }
 
-        if (cliente.getNome() == null || cliente.getNome().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'nome' é obrigatório.");
+        if (cliente.getNome() != null && !cliente.getNome().trim().isEmpty()) {
+            clienteExistente.setNome(cliente.getNome());
         }
 
-        if (cliente.getTelefone() == null || cliente.getTelefone().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'telefone' é obrigatório.");
+        if (cliente.getTelefone() != null && !cliente.getTelefone().trim().isEmpty()) {
+            clienteExistente.setTelefone(cliente.getTelefone());
         }
 
-        if (cliente.getAtivo() == null) {
-            cliente.setAtivo(true);
+        if (cliente.getCpfCnpj() != null && !cliente.getCpfCnpj().trim().isEmpty()) {
+            clienteExistente.setCpfCnpj(cliente.getCpfCnpj());
         }
 
-        cliente.setId(id);
-        return repository.save(cliente);
+        if (cliente.getAtivo() != null) {
+            clienteExistente.setAtivo(cliente.getAtivo());
+        }
+        
+        return repository.save(clienteExistente);
     }
 
     @Transactional
