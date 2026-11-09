@@ -29,9 +29,19 @@ public class ClienteController {
         return service.listarTodos();
     }
 
-    @GetMapping("/{telefone}")
+    @GetMapping("/telefone/{telefone}")
     public ClienteEntity buscarPorTelefone(@PathVariable String telefone) {
         return service.buscarPorTelefone(telefone);
+    }
+
+    @GetMapping("/cpf-cnpj/{cpfCnpj}")
+    public ClienteEntity buscarPorCpfCnpj(@PathVariable String cpfCnpj) {
+        return service.buscarPorCpfCnpj(cpfCnpj);
+    }
+
+    @GetMapping("/nome/{nome}")
+    public List<ClienteEntity> listarPorNome(@PathVariable String nome) {
+        return service.listarPorNome(nome);
     }
 
     @PostMapping

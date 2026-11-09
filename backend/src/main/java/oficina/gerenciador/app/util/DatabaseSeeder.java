@@ -22,8 +22,8 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (usuarioRepository.count() == 0 || !usuarioRepository.existePorPerfilIgnorandoCase("admin")) {
-            if (!usuarioRepository.existePorEmailIgnorandoCase("admin@oficina.com")) {
+        if (usuarioRepository.count() == 0 || !usuarioRepository.existsByPerfilIgnoreCase("admin")) {
+            if (!usuarioRepository.existsByEmailIgnoreCase("admin@oficina.com")) {
                 UsuarioEntity admin = UsuarioEntity.builder()
                         .nome("Administrador")
                         .email("admin@oficina.com")

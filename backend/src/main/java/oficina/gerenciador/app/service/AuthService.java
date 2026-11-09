@@ -33,7 +33,7 @@ public class AuthService {
         String senha = request.getSenha().trim();
 
         // Busca pelo email
-        Optional<UsuarioEntity> usuarioOpt = usuarioRepository.buscarPorEmailIgnorandoCase(login);
+        Optional<UsuarioEntity> usuarioOpt = usuarioRepository.findByEmailIgnoreCase(login);
 
         // Se não encontrar e o login informado for "admin" ou variação com admin, busca o usuário com perfil admin
         if (usuarioOpt.isEmpty() && (login.equalsIgnoreCase("admin") || login.toLowerCase().startsWith("admin@"))) {

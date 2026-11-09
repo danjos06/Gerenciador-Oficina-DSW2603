@@ -43,7 +43,7 @@ public class UsuarioService {
         }
 
         String email = requisicao.getEmail().trim().toLowerCase();
-        if (usuarioRepository.existePorEmailIgnorandoCase(email)) {
+        if (usuarioRepository.existsByEmailIgnoreCase(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
         }
 
