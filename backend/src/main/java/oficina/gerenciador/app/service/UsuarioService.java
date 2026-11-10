@@ -80,4 +80,60 @@ public class UsuarioService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
         return UsuarioResponse.deEntidade(usuario);
     }
+
+    public UsuarioResponse atualizarUsuario(Integer id, CriarUsuarioRequest requisicao, String perfilSolicitante) {
+        if (perfilSolicitante == null || !perfilSolicitante.equalsIgnoreCase("admin")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado: apenas administradores podem atualizar usuários");
+        }
+
+        if (requisicao == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dados do usuário não informados");
+        }
+
+        UsuarioEntity usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        if (requisicao.getNome() != null && !requisicao.getNome().trim().isEmpty()) {
+            usuario.setNome(requisicao.getNome().trim());
+        }
+
+        if (requisicao.getEmail() != null && !requisicao.getEmail().trim().isEmpty()) {
+            String novoEmail = requisicao.getEmail().trim().toLowerCase();
+            if (!novoEmail.equalsIgnoreCase(usuario.getEmail()) && usuarioRepository.existsByEmailIgnoreCase(novoEmail)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
+            }
+            usuario.setEmail(novoEmail);
+        }
+
+        if (requisicao.getSenha() != null && !requisicao.getSenha().trim().isEmpty()) {
+            usuario.setSenhaHash(Md5Util.hash(requisicao.getSenha().trim()));
+        }
+
+        if (requisicao.getPerfil() != null && !requisicao.getPerfil().trim().isEmpty()) {
+            String perfil = requisicao.getPerfil().trim().toLowerCase();
+            if (!perfil.equals("admin") && !perfil.equals("operational")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Perfil inválido. Use 'admin' ou 'operational'");
+            }
+            usuario.setPerfil(perfil);
+        }
+
+        if (requisicao.getAtivo() != null) {
+            usuario.setAtivo(requisicao.getAtivo());
+        }
+
+        UsuarioEntity salvo = usuarioRepository.save(usuario);
+        return UsuarioResponse.deEntidade(salvo);
+    }
+
+    public void deletarUsuario(Integer id, String perfilSolicitante) {
+        if (perfilSolicitante == null || !perfilSolicitante.equalsIgnoreCase("admin")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado: apenas administradores podem inativar usuários");
+        }
+
+        UsuarioEntity usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        usuario.setAtivo(false);
+        usuarioRepository.save(usuario);
+    }
 }

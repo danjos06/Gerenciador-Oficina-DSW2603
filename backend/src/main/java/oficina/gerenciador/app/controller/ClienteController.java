@@ -29,6 +29,11 @@ public class ClienteController {
         return service.listarTodos();
     }
 
+    @GetMapping("/id/{id}")
+    public ClienteEntity buscarPorId(@PathVariable int id) {
+        return service.buscarPorId(id);
+    }
+
     @GetMapping("/tel/{telefone}")
     public ClienteEntity buscarPorTelefone(@PathVariable String telefone) {
         return service.buscarPorTelefone(telefone);
