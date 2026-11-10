@@ -3,6 +3,7 @@ package oficina.gerenciador.app.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import oficina.gerenciador.app.model.enums.MetodoAprovacao;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,8 +42,9 @@ public class OrdemItemServicoEntity {
     @Builder.Default
     private Boolean extra = false;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "metodo_aprovacao", length = 30)
-    private String metodoAprovacao; // whatsapp | presencial | telefone
+    private MetodoAprovacao metodoAprovacao;
 
     @Column(name = "aprovado_em")
     private LocalDateTime aprovadoEm;

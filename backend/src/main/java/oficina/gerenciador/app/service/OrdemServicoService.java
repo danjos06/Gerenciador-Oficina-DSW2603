@@ -3,7 +3,6 @@ package oficina.gerenciador.app.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,6 +16,8 @@ import oficina.gerenciador.app.model.entity.OrdemServicoEntity;
 import oficina.gerenciador.app.model.entity.PecaEntity;
 import oficina.gerenciador.app.model.entity.ServicoEntity;
 import oficina.gerenciador.app.model.entity.UsuarioEntity;
+import oficina.gerenciador.app.model.enums.OrigemPeca;
+import oficina.gerenciador.app.model.enums.StatusOrdem;
 import oficina.gerenciador.app.repository.HistoricoStatusOrdemRepository;
 import oficina.gerenciador.app.repository.OrdemItemServicoRepository;
 import oficina.gerenciador.app.repository.OrdemPecaRepository;
@@ -27,9 +28,6 @@ import oficina.gerenciador.app.repository.UsuarioRepository;
 
 @Service
 public class OrdemServicoService {
-
-    private static final Set<String> STATUS_FINALIZADOS = Set.of("concluida", "entregue", "cancelada");
-
     private final OrdemServicoRepository repository;
     private final OrdemPecaRepository ordemPecaRepository;
     private final OrdemItemServicoRepository ordemItemServicoRepository;
@@ -83,7 +81,11 @@ public class OrdemServicoService {
 
     @Transactional(readOnly = true)
     public List<OrdemServicoEntity> listarPorStatus(String status) {
-        return repository.findByStatusIgnoreCase(status);
+        StatusOrdem statusEnum = StatusOrdem.deValor(status);
+        if (statusEnum == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O parâmetro 'status' é obrigatório.");
+        }
+        return repository.findByStatus(statusEnum);
     }
 
     @Transactional
@@ -123,10 +125,8 @@ public class OrdemServicoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'quilometragem' é obrigatório.");
         }
 
-        if (ordem.getStatus() == null || ordem.getStatus().trim().isEmpty()) {
-            ordem.setStatus("aberta");
-        } else {
-            ordem.setStatus(ordem.getStatus().trim().toLowerCase());
+        if (ordem.getStatus() == null) {
+            ordem.setStatus(StatusOrdem.ABERTA);
         }
 
         if (ordem.getDesconto() == null) {
@@ -205,9 +205,9 @@ public class OrdemServicoService {
             ordemExistente.setEntregueEm(ordem.getEntregueEm());
         }
 
-        String statusAnterior = ordemExistente.getStatus();
-        String novoStatus = ordem.getStatus() != null ? ordem.getStatus().trim().toLowerCase() : null;
-        boolean mudouStatus = novoStatus != null && !novoStatus.isEmpty() && !novoStatus.equalsIgnoreCase(statusAnterior);
+        StatusOrdem statusAnterior = ordemExistente.getStatus();
+        StatusOrdem novoStatus = ordem.getStatus();
+        boolean mudouStatus = novoStatus != null && novoStatus != statusAnterior;
 
         if (mudouStatus) {
             aplicarMudancaDeStatus(ordemExistente, novoStatus);
@@ -224,25 +224,25 @@ public class OrdemServicoService {
     }
 
     @Transactional
-    public OrdemServicoEntity atualizarStatus(int id, String novoStatus, String justificativa, Integer usuarioLogadoId) {
+    public OrdemServicoEntity atualizarStatus(int id, String novoStatusStr, String justificativa, Integer usuarioLogadoId) {
         OrdemServicoEntity ordemExistente = buscarPorId(id);
 
-        if (novoStatus == null || novoStatus.trim().isEmpty()) {
+        StatusOrdem novoStatus = StatusOrdem.deValor(novoStatusStr);
+        if (novoStatus == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'novoStatus' é obrigatório.");
         }
 
-        String statusFormatado = novoStatus.trim().toLowerCase();
-        String statusAnterior = ordemExistente.getStatus();
+        StatusOrdem statusAnterior = ordemExistente.getStatus();
 
-        if (statusFormatado.equalsIgnoreCase(statusAnterior)) {
+        if (novoStatus == statusAnterior) {
             return ordemExistente;
         }
 
-        aplicarMudancaDeStatus(ordemExistente, statusFormatado);
+        aplicarMudancaDeStatus(ordemExistente, novoStatus);
         OrdemServicoEntity atualizada = repository.save(ordemExistente);
 
         UsuarioEntity autor = obterUsuarioAutor(usuarioLogadoId, atualizada.getCriadoPor());
-        registrarHistorico(atualizada, autor, statusAnterior, statusFormatado, justificativa);
+        registrarHistorico(atualizada, autor, statusAnterior, novoStatus, justificativa);
 
         return atualizada;
     }
@@ -255,17 +255,17 @@ public class OrdemServicoService {
     @Transactional
     public void cancelar(int id, Integer usuarioLogadoId) {
         OrdemServicoEntity ordemExistente = buscarPorId(id);
-        String statusAnterior = ordemExistente.getStatus();
+        StatusOrdem statusAnterior = ordemExistente.getStatus();
 
-        if ("cancelada".equalsIgnoreCase(statusAnterior)) {
+        if (statusAnterior == StatusOrdem.CANCELADA) {
             return;
         }
 
-        ordemExistente.setStatus("cancelada");
+        ordemExistente.setStatus(StatusOrdem.CANCELADA);
         OrdemServicoEntity salva = repository.save(ordemExistente);
 
         UsuarioEntity autor = obterUsuarioAutor(usuarioLogadoId, salva.getCriadoPor());
-        registrarHistorico(salva, autor, statusAnterior, "cancelada", "Ordem de serviço cancelada");
+        registrarHistorico(salva, autor, statusAnterior, StatusOrdem.CANCELADA, "Ordem de serviço cancelada");
     }
 
     // =========================================================================
@@ -305,8 +305,8 @@ public class OrdemServicoService {
             itemPeca.setQuantidade(1);
         }
 
-        if (itemPeca.getOrigem() == null || itemPeca.getOrigem().trim().isEmpty()) {
-            itemPeca.setOrigem("nova");
+        if (itemPeca.getOrigem() == null) {
+            itemPeca.setOrigem(OrigemPeca.NOVA);
         }
 
         if (itemPeca.getPendente() == null) {
@@ -340,7 +340,7 @@ public class OrdemServicoService {
             existente.setPrecoUnitario(itemPeca.getPrecoUnitario());
         }
 
-        if (itemPeca.getOrigem() != null && !itemPeca.getOrigem().trim().isEmpty()) {
+        if (itemPeca.getOrigem() != null) {
             existente.setOrigem(itemPeca.getOrigem());
         }
 
@@ -411,8 +411,7 @@ public class OrdemServicoService {
             itemServico.setExtra(false);
         }
 
-        if (itemServico.getMetodoAprovacao() != null && !itemServico.getMetodoAprovacao().trim().isEmpty()
-                && itemServico.getAprovadoEm() == null) {
+        if (itemServico.getMetodoAprovacao() != null && itemServico.getAprovadoEm() == null) {
             itemServico.setAprovadoEm(LocalDateTime.now());
         }
 
@@ -449,7 +448,7 @@ public class OrdemServicoService {
 
         if (itemServico.getMetodoAprovacao() != null) {
             existente.setMetodoAprovacao(itemServico.getMetodoAprovacao());
-            if (existente.getAprovadoEm() == null && !itemServico.getMetodoAprovacao().trim().isEmpty()) {
+            if (existente.getAprovadoEm() == null) {
                 existente.setAprovadoEm(LocalDateTime.now());
             }
         }
@@ -491,7 +490,7 @@ public class OrdemServicoService {
     // =========================================================================
 
     private void validarOrdemAbertaParaEdicaoDeItens(OrdemServicoEntity ordem) {
-        if (ordem.getStatus() != null && STATUS_FINALIZADOS.contains(ordem.getStatus().toLowerCase())) {
+        if (ordem.getStatus() != null && ordem.getStatus().isFinalizado()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Não é permitido alterar peças ou serviços de uma ordem com status '" + ordem.getStatus() + "'."
@@ -499,11 +498,11 @@ public class OrdemServicoService {
         }
     }
 
-    private void aplicarMudancaDeStatus(OrdemServicoEntity ordem, String novoStatus) {
+    private void aplicarMudancaDeStatus(OrdemServicoEntity ordem, StatusOrdem novoStatus) {
         ordem.setStatus(novoStatus);
-        if ("concluida".equalsIgnoreCase(novoStatus) && ordem.getConcluidoEm() == null) {
+        if (novoStatus == StatusOrdem.CONCLUIDA && ordem.getConcluidoEm() == null) {
             ordem.setConcluidoEm(LocalDateTime.now());
-        } else if ("entregue".equalsIgnoreCase(novoStatus)) {
+        } else if (novoStatus == StatusOrdem.ENTREGUE) {
             if (ordem.getConcluidoEm() == null) {
                 ordem.setConcluidoEm(LocalDateTime.now());
             }
@@ -523,8 +522,8 @@ public class OrdemServicoService {
     private void registrarHistorico(
             OrdemServicoEntity ordem,
             UsuarioEntity usuario,
-            String statusAnterior,
-            String novoStatus,
+            StatusOrdem statusAnterior,
+            StatusOrdem novoStatus,
             String justificativa
     ) {
         HistoricoStatusOrdemEntity historico = HistoricoStatusOrdemEntity.builder()

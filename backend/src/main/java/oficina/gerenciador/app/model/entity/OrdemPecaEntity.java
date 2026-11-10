@@ -3,6 +3,7 @@ package oficina.gerenciador.app.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import oficina.gerenciador.app.model.enums.OrigemPeca;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,9 +38,14 @@ public class OrdemPecaEntity {
     @Column(name = "preco_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal precoUnitario;
 
+    // @Column(name = "origem", nullable = false, length = 20)
+    // @Builder.Default
+    // private String origem = "nova"; // nova | usada | cliente
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "origem", nullable = false, length = 20)
     @Builder.Default
-    private String origem = "nova"; // nova | usada | cliente
+    private OrigemPeca origem = OrigemPeca.NOVA;
 
     @Column(name = "pendente", nullable = false)
     @Builder.Default

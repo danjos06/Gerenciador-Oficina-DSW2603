@@ -3,6 +3,8 @@ package oficina.gerenciador.app.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import oficina.gerenciador.app.model.enums.StatusOrdem;
+
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -30,11 +32,19 @@ public class HistoricoStatusOrdemEntity {
     @JoinColumn(name = "usuario_id", nullable = false, foreignKey = @ForeignKey(name = "fk_historico_usuario"))
     private UsuarioEntity usuario;
 
-    @Column(name = "status_anterior", length = 30)
-    private String statusAnterior;
+    // @Column(name = "status_anterior", length = 30)
+    // private String statusAnterior;
 
+    // @Column(name = "novo_status", nullable = false, length = 30)
+    // private String novoStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_anterior", length = 30)
+    private StatusOrdem statusAnterior;
+    
+    @Enumerated(EnumType.STRING)
     @Column(name = "novo_status", nullable = false, length = 30)
-    private String novoStatus;
+    private StatusOrdem novoStatus;
 
     @Column(name = "justificativa", columnDefinition = "TEXT")
     private String justificativa;

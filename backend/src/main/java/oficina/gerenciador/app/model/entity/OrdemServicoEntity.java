@@ -3,6 +3,8 @@ package oficina.gerenciador.app.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import oficina.gerenciador.app.model.enums.StatusOrdem;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -46,8 +48,10 @@ public class OrdemServicoEntity {
     @JoinColumn(name = "ordem_origem_id", foreignKey = @ForeignKey(name = "fk_ordem_origem"))
     private OrdemServicoEntity ordemOrigem;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
-    private String status; // aberta | em_andamento | aguardando_peca | concluida | entregue | cancelada
+    @Builder.Default
+    private StatusOrdem status = StatusOrdem.ABERTA;
 
     @Column(name = "problema_relatado", nullable = false, columnDefinition = "TEXT")
     private String problemaRelatado;
