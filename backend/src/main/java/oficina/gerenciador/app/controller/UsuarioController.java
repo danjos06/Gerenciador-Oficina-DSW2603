@@ -41,4 +41,25 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> buscarUsuarioPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(usuarioService.buscarUsuarioPorId(id));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> atualizarUsuario(
+            @PathVariable Integer id,
+            @RequestBody CriarUsuarioRequest requisicao,
+            HttpServletRequest httpRequest
+    ) {
+        String perfilSolicitante = (String) httpRequest.getAttribute(AuthInterceptor.ATRIBUTO_ROLE);
+        UsuarioResponse resposta = usuarioService.atualizarUsuario(id, requisicao, perfilSolicitante);
+        return ResponseEntity.ok(resposta);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarUsuario(
+            @PathVariable Integer id,
+            HttpServletRequest httpRequest
+    ) {
+        String perfilSolicitante = (String) httpRequest.getAttribute(AuthInterceptor.ATRIBUTO_ROLE);
+        usuarioService.deletarUsuario(id, perfilSolicitante);
+        return ResponseEntity.noContent().build();
+    }
 }
