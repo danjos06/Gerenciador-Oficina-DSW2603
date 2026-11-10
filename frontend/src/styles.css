@@ -1,3 +1,55 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --ink: #191e24;
+  --ink-2: #262d35;
+  --ink-3: #343c45;
+  --blue: #27a9e1;
+  --blue-ink: #0e6f9b;
+  --blue-soft: #e4f4fb;
+  --bg: #f2f4f6;
+  --card: #ffffff;
+  --line: #e3e7eb;
+  --text: #000000;
+  --muted: #111111;
+  --radius: 14px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: Inter, 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.5; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-@import 'tailwindcss';
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.mut { color: var(--muted); }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--text); font-weight: 500; font-size: 14px; white-space: nowrap; }
+.btn:hover { border-color: #c9d0d7; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: #1e9bd1; }
+.btn.dark { background: var(--ink); border-color: var(--ink); color: #fff; }
+.btn.sm { height: 32px; padding: 0 12px; font-size: 13px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.tabela { width: 100%; border-collapse: collapse; }
+.tabela th { text-align: left; font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 10px 20px; background: #f7f8fa; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tabela td { padding: 14px 20px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tabela tr:last-child td { border-bottom: 0; }
+.tabela .dir { text-align: right; }
+.tabela .forte { font-weight: 600; }
+.tabela .sub { font-size: 13px; color: var(--muted); }
+
+.pilula { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; background: #eceff2; color: #000; white-space: nowrap; }
+.pilula.s-exec { background: #e1f3fb; color: #0b6a96; }
+.pilula.s-aguard { background: #e7eefb; color: #2a57a0; }
+.pilula.s-pronto { background: #dff4e8; color: #17703f; }
+.pilula.s-conc { background: #eceff2; color: #000; }
+.pilula.s-diag { background: #eceff2; color: #000; }
+
+.campo { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.campo input, .campo select, .campo textarea { height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 15px; color: var(--text); width: 100%; }
+.campo textarea { height: 88px; padding: 10px 12px; resize: vertical; }
+.campo .erro { color: #b3261e; font-weight: 400; }
+
+.pagina-titulo { font-size: 30px; font-weight: 400; letter-spacing: -.01em; }
+.pagina-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }

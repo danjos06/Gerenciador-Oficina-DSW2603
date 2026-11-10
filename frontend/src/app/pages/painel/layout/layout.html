@@ -1,0 +1,39 @@
+<div class="shell">
+  @if (aberta()) {
+    <div class="veu" (click)="alternar()"></div>
+    <aside class="lateral">
+      <div class="marca">
+        <span class="logo"><app-icon name="wrench" [size]="18" /></span>
+        <div><strong>Oficina do Joe</strong></div>
+      </div>
+
+      <nav aria-label="Painel">
+        <p class="grupo">ESPAÇO DA OFICINA</p>
+        @for (i of itens; track i.caminho) {
+          <a class="item" [routerLink]="i.caminho ? ['/painel', i.caminho] : ['/painel']" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: i.caminho === '' }" (click)="navegou()">
+            <app-icon [name]="i.icone" [size]="16" /> {{ i.rotulo }}
+          </a>
+        }
+      </nav>
+
+      <div class="rodape-lateral">
+      
+        <div class="usuario">
+          <div><strong>{{ cfg.usuario.nome }}</strong><small>{{ cfg.usuario.papel }}</small></div>
+          <button class="sair" (click)="sair()" aria-label="Sair" title="Sair"><app-icon name="log-out" [size]="16" /></button>
+        </div>
+      </div>
+    </aside>
+  }
+
+  <div class="coluna">
+    <header class="barra">
+      <span class="trilha"><span class="mut">Oficina</span><span class="mut">/</span><strong>{{ titulo() }}</strong></span>
+      <span class="direita">
+        <span class="mut atualizado">Atualizado às {{ atualizado }}</span>
+        <span class="selo">Acesso administrativo</span>
+      </span>
+    </header>
+    <main class="miolo"><router-outlet /></main>
+  </div>
+</div>

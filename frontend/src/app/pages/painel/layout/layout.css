@@ -1,0 +1,42 @@
+.shell { display: flex; min-height: 100vh; }
+.coluna { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lateral { width: 232px; flex: none; background: var(--ink); color: #fff; padding: 20px 14px 14px; display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.veu { display: none; }
+.marca { display: flex; gap: 10px; align-items: center; padding: 0 6px; }
+.marca strong { display: block; color: #fff; font-size: 17px; font-weight: 500; line-height: 1.1; }
+.marca small, .oficina small, .usuario small { display: block; font-size: 10px; letter-spacing: .04em; color: #fff; }
+.oficina small, .usuario small { font-size: 12px; letter-spacing: 0; }
+.logo { width: 32px; height: 32px; border-radius: 8px; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.oficina { background: var(--ink-2); border-radius: 10px; padding: 10px; display: flex; gap: 10px; align-items: center; }
+.oficina strong, .usuario strong { color: #fff; font-size: 13px; font-weight: 600; display: block; }
+.oficina .ico { color: #fff; }
+.grupo { font-size: 11px; letter-spacing: .06em; color: #fff; margin: 0 8px 8px; }
+nav { display: grid; gap: 2px; }
+.item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 14px; color: #fff; }
+.item:hover { background: var(--ink-2); color: #fff; }
+.item.ativo { background: var(--blue); color: #fff; font-weight: 500; }
+.rodape-lateral { margin-top: auto; display: grid; gap: 10px; }
+.protegido { background: var(--ink-2); border-radius: 10px; padding: 12px; font-size: 12px; color: #fff; display: grid; gap: 4px; }
+.protegido strong { color: #fff; font-size: 13px; }
+.protegido app-icon { color: var(--blue); }
+.protegido p { color: #fff; }
+.usuario { display: flex; align-items: center; gap: 10px; padding: 6px; border-top: 1px solid var(--ink-3); padding-top: 12px; }
+.usuario > div { flex: 1; }
+.sair { background: none; border: 0; color: #fff; padding: 4px; }
+.sair:hover { color: #fff; }
+
+.barra { height: 56px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; padding: 0 24px; position: sticky; top: 0; z-index: 5; }
+.icone { position: relative; width: 32px; height: 32px; border: 0; background: none; border-radius: 8px; display: grid; place-items: center; color: #000; }
+.icone:hover { background: #f0f2f4; }
+.trilha { display: flex; gap: 8px; font-size: 14px; }
+.direita { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.atualizado { font-size: 13px; }
+.selo { background: #eef0f3; border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 500; color: #000; }
+.miolo { padding: 24px 28px 28px; max-width: 1260px; width: 100%; }
+
+@media (max-width: 900px) {
+  .lateral { position: fixed; z-index: 30; left: 0; top: 0; box-shadow: 0 0 40px rgba(0, 0, 0, .35); }
+  .veu { display: block; position: fixed; inset: 0; background: rgba(10, 14, 18, .5); z-index: 25; }
+  .atualizado, .selo { display: none; }
+  .miolo { padding: 16px; }
+}

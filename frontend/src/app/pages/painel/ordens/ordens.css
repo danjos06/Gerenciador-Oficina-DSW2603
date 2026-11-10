@@ -1,0 +1,24 @@
+.cabeca { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.nova { padding: 20px; margin-bottom: 16px; display: grid; gap: 14px; }
+.nova h2 { font-size: 16px; font-weight: 500; }
+.grade-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.acoes { display: flex; justify-content: flex-end; gap: 10px; }
+.lista { overflow: hidden; }
+.ferramentas { padding: 14px 16px; display: grid; gap: 12px; }
+.busca { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; height: 38px; color: var(--muted); }
+.busca input { border: 0; flex: 1; outline: none; background: transparent; color: var(--text); }
+.filtros { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+.chip span { color: var(--muted); margin-left: 4px; }
+.chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.chip.on span { color: #fff; }
+.rolagem { overflow-x: auto; }
+.rolagem .tabela { min-width: 860px; }
+.status { border: 0; border-radius: 6px; padding: 3px 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.lixo { border: 0; background: none; color: #a8231b; padding: 6px; border-radius: 6px; }
+.lixo:hover { background: #fdecea; }
+.vazio { text-align: center; color: var(--muted); padding: 32px; }
+.soma { display: flex; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--line); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (max-width: 1000px) { .grade-form { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .grade-form { grid-template-columns: 1fr; } }

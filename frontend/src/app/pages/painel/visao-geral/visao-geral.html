@@ -1,0 +1,140 @@
+<div class="cabeca">
+  <div>
+    <h1 class="pagina-titulo">Sua oficina em números</h1>
+    <p class="pagina-sub">Olá, {{ primeiroNome }}. Veja o resultado do mês e o ritmo da operação.</p>
+  </div>
+  <div class="botoes">
+    <label class="mes btn">
+      <app-icon name="calendar" [size]="15" />
+      <select [ngModel]="s.mesChave()" (ngModelChange)="s.mesChave.set($event)" aria-label="Mês do relatório">
+        @for (m of meses; track m.chave) { <option [value]="m.chave">{{ m.nome }}</option> }
+      </select>
+    </label>
+    <button class="btn" (click)="s.exportarRelatorio()"><app-icon name="download" [size]="15" /> Exportar relatório</button>
+  </div>
+</div>
+
+<section class="kpis" aria-label="Indicadores do mês">
+  @for (k of kpis(); track k.rotulo) {
+    <article class="card kpi" [class.escuro]="k.escuro">
+      <header><span>{{ k.rotulo }}</span><app-icon [name]="k.icone" [size]="15" /></header>
+      <strong>{{ k.valor | currency: 'BRL' : 'symbol' : '1.0-0' }}</strong>
+      <footer>
+        @if (k.delta !== null) {
+          <span class="delta"><app-icon [name]="k.delta >= 0 ? 'arrow-up-right' : 'arrow-down-right'" [size]="11" /> {{ abs(k.delta) | number: '1.1-1' }}%</span>
+        } @else {
+          <span class="delta">{{ k.destaque }}</span>
+        }
+        <span class="mut">{{ k.rodape }}</span>
+      </footer>
+    </article>
+  }
+</section>
+
+<section class="linha l1">
+  <article class="card bloco">
+    <h2>Evolução financeira</h2>
+    <p class="pagina-sub">Receitas, despesas e lucro líquido a cada mês</p>
+    <ul class="legenda">
+      <li><i style="background:#191e24"></i>Faturamento</li>
+      <li><i style="background:#c4cad1"></i>Despesas</li>
+      <li><i style="background:#27a9e1"></i>Lucro líquido</li>
+    </ul>
+    <svg class="grafico" [attr.viewBox]="'0 0 ' + grafico().W + ' 208'" role="img" aria-label="Gráfico de faturamento, despesas e lucro dos últimos meses">
+      @for (g of grafico().grades; track g.y) {
+        <line [attr.x1]="grafico().padL" [attr.x2]="grafico().W" [attr.y1]="g.y" [attr.y2]="g.y" stroke="#e8ebee" />
+        <text [attr.x]="grafico().padL - 8" [attr.y]="g.y + 3" text-anchor="end" class="eixo">{{ g.rotulo }}</text>
+      }
+      @for (b of grafico().barras; track b.rotulo) {
+        <g>
+          <title>{{ b.dica }}</title>
+          <rect [attr.x]="b.x1" [attr.y]="b.y1" width="17" [attr.height]="b.h1" rx="2" fill="#191e24" />
+          <rect [attr.x]="b.x2" [attr.y]="b.y2" width="17" [attr.height]="b.h2" rx="2" fill="#c4cad1" />
+        </g>
+      }
+      <polyline [attr.points]="grafico().linha" fill="none" stroke="#27a9e1" stroke-width="2" stroke-linejoin="round" />
+      @for (b of grafico().barras; track b.rotulo) {
+        <circle [attr.cx]="b.cx" [attr.cy]="b.cy" r="3" fill="#fff" stroke="#27a9e1" stroke-width="2" />
+        <text [attr.x]="b.cx" y="178" text-anchor="middle" class="mes-txt" [class.sel]="b.sel">{{ b.rotulo }}</text>
+        <text [attr.x]="b.cx" y="196" text-anchor="middle" class="luc-txt">{{ b.lucro }}</text>
+      }
+    </svg>
+    <footer class="rodape-card">
+      <span class="mut">Lucro em {{ s.mesAtual().nome.split(' ')[0].toLowerCase() }}</span>
+      <span class="azul">{{ brl(lucro()) }} · margem de {{ margem() | number: '1.1-1' }}%</span>
+    </footer>
+  </article>
+
+  <article class="card bloco">
+    <h2>Para onde foi o dinheiro</h2>
+    <p class="pagina-sub">Despesas de {{ s.mesAtual().nome.toLowerCase() }}</p>
+    <p class="total">{{ s.mesAtual().despesas | currency: 'BRL' : 'symbol' : '1.0-0' }} <small class="mut">{{ pctReceita() | number: '1.1-1' }}% da receita</small></p>
+    <div class="segmentos" role="img" aria-label="Composição das despesas">
+      @for (c of composicao(); track c.nome) { <span [style.width.%]="c.pct" [style.background]="c.cor"></span> }
+    </div>
+    <ul class="composicao">
+      @for (c of composicao(); track c.nome) {
+        <li><i [style.background]="c.cor"></i><span>{{ c.nome }}</span><strong>{{ c.valor | currency: 'BRL' : 'symbol' : '1.0-0' }}</strong><span class="mut">{{ c.pct }}%</span></li>
+      }
+    </ul>
+    @if (difDespesas(); as d) {
+      <p class="aviso"><app-icon [name]="d > 0 ? 'arrow-up-right' : 'arrow-down-right'" [size]="13" /> {{ abs(d) | currency: 'BRL' : 'symbol' : '1.0-0' }} a {{ d > 0 ? 'mais' : 'menos' }} em despesas vs. {{ s.mesAnterior()!.nome.split(' ')[0].toLowerCase() }}.</p>
+    }
+    <p class="pagina-sub">Valores pagos e lançados no período.</p>
+  </article>
+</section>
+
+<section class="linha l2">
+  <article class="card bloco sem-pad">
+    <div class="topo-os">
+      <div>
+        <h2>Ordens de serviço</h2>
+        <p class="pagina-sub">Acompanhe os veículos que estão na oficina</p>
+      </div>
+      <a class="ver" routerLink="/painel/ordens">Ver todas <app-icon name="arrow-up-right" [size]="13" /></a>
+    </div>
+    <div class="rolagem">
+      <table class="tabela">
+        <thead><tr><th>OS</th><th>Cliente / veículo</th><th>Serviço</th><th>Status</th><th class="dir">Valor</th></tr></thead>
+        <tbody>
+          @for (o of ultimas(); track o.numero) {
+            <tr>
+              <td class="forte">#{{ o.numero }}</td>
+              <td><div class="forte">{{ o.cliente }}</div><div class="sub">{{ o.veiculo }} · {{ o.placa }}</div></td>
+              <td>{{ o.servico }}</td>
+              <td><span class="pilula" [class]="'pilula ' + classeStatus(o.status)">{{ o.status }}</span></td>
+              <td class="dir forte">{{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="card bloco">
+    <h2>Na oficina hoje</h2>
+    <p class="pagina-sub">{{ hoje }}</p>
+    <div class="numeros">
+      <div><strong>{{ s.abertas().length }}</strong><span>OS em aberto</span></div>
+      <div><strong>{{ s.aguardando() }}</strong><span>Aguard. aprovação</span></div>
+      <div><strong>{{ s.paraRetirada() }}</strong><span>Para retirada</span></div>
+    </div>
+    <div class="boxes-topo"><span>Ocupação dos boxes</span><span class="mut">{{ s.boxesOcupados() }} de {{ s.boxesTotal }}</span></div>
+    <div class="boxes" role="img" [attr.aria-label]="s.boxesOcupados() + ' de ' + s.boxesTotal + ' boxes ocupados'">
+      @for (b of boxes; track b) { <span [class.on]="b < s.boxesOcupados()"></span> }
+    </div>
+    <div class="proxima">
+      <app-icon name="clock" [size]="16" />
+      @if (entrega(); as e) {
+        <div><small>PRÓXIMA ENTREGA · {{ e.titulo }}</small><strong>{{ e.texto }}</strong></div>
+      } @else {
+        <div><small>PRÓXIMA ENTREGA</small><strong>Sem entregas agendadas</strong></div>
+      }
+    </div>
+  </article>
+</section>
+
+<footer class="notas">
+  <span>Financeiro: {{ periodo() }} · Operação: {{ hojeCurto }}</span>
+  <a href="mailto:contato@torque.com.br"><app-icon name="help" [size]="13" /> Precisa de ajuda?</a>
+</footer>

@@ -1,0 +1,114 @@
+<header class="topo">
+  <div class="topo-in">
+    <a class="marca" href="#" (click)="$event.preventDefault(); rolar('inicio')" aria-label="Oficina do Joe">
+      <img class="logo-oficina" src="Logo-Oficina.jpg.png" alt="" />
+      <span class="sep"></span>
+      <span class="nome-oficina">{{ cfg.nome }}</span>
+    </a>
+    <nav class="menu" aria-label="Seções">
+      <a href="#servicos" (click)="$event.preventDefault(); rolar('servicos')">Serviços</a>
+      <a href="#sobre" (click)="$event.preventDefault(); rolar('sobre')">Sobre</a>
+      <a href="#contato" (click)="$event.preventDefault(); rolar('contato')">Contato</a>
+    </nav>
+    <div class="acoes">
+      <button class="btn primary" (click)="rolar('contato')">Falar com oficina</button>
+    </div>
+  </div>
+</header>
+
+<main id="inicio" class="conteudo">
+  <section class="hero">
+    <div class="hero-texto">
+      <span class="chip">OFICINA DE CONFIANÇA EM SÃO PAULO</span>
+      <h1>Mecânica confiável para quem valoriza segurança e transparência.</h1>
+      <p>Na Torque você encontra revisão, freios, alinhamento, troca de óleo e manutenção preventiva com equipe especializada, preços claros e comunicação direta.</p>
+      <ul class="pontos">
+        <li>Orçamento transparente antes do serviço</li>
+        <li>Equipe técnica qualificada e atendimento humano</li>
+        <li>Retorno rápido e entrega no prazo combinado</li>
+      </ul>
+      <div class="hero-botoes">
+        <button class="btn primary grande" (click)="pedirServico('Quero agendar uma visita.')">Agendar visita</button>
+        <button class="btn branco grande" (click)="rolar('servicos')">Conheça nossos serviços</button>
+      </div>
+    </div>
+    <div class="hero-img" role="img" aria-label="Mecânicos trabalhando em carros na oficina">
+      <svg viewBox="0 0 320 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="110" fill="#2a3a4c" />
+        <path d="M30 80c6-22 20-30 40-32l30-14c10-4 26-4 38 0l26 14c18 2 30 8 36 22v12H30z" fill="#4c7ea5" />
+        <circle cx="80" cy="88" r="12" fill="#111" /><circle cx="196" cy="88" r="12" fill="#111" />
+        <path d="M222 38 262 16" stroke="#cfd6dd" stroke-width="4" stroke-linecap="round" />
+      </svg>
+      <div class="foto" [style.background-image]="'url(/oficina-imagem.jpg)'"></div>
+    </div>
+  </section>
+
+  <section id="servicos" class="secao">
+    <div class="secao-topo">
+      <div>
+        <h2>Serviços pensados para manter seu carro em dia.</h2>
+        <p class="mut">Escolha o que precisa e agende uma visita com a equipe da {{ cfg.nome }}.</p>
+      </div>
+    </div>
+    <div class="grade g4">
+      @for (sv of servicos; track sv.titulo) {
+        <article class="card servico">
+          <span class="ico"><app-icon [name]="sv.icone" [size]="18" /></span>
+          <h3>{{ sv.titulo }}</h3>
+          <p>{{ sv.desc }}</p>
+          <button class="link" (click)="pedirServico(sv.titulo)">Pedir orçamento →</button>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section id="sobre" class="secao">
+    <div class="grade g3">
+      @for (d of diferenciais; track d.titulo) {
+        <article class="card servico">
+          <span class="ico"><app-icon [name]="d.icone" [size]="18" /></span>
+          <h3>{{ d.titulo }}</h3>
+          <p>{{ d.desc }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section id="contato" class="contato">
+    <div class="card fale">
+      <h2>Fale com a oficina.</h2>
+      <p class="mut">Tire dúvidas, peça um orçamento inicial ou agende uma visita com a equipe.</p>
+      <dl class="dados">
+        <div><dt>TELEFONE</dt><dd>{{ cfg.telefone }}</dd></div>
+        <div><dt>E-MAIL</dt><dd>{{ cfg.email }}</dd></div>
+        <div><dt>ENDEREÇO</dt><dd>{{ cfg.endereco }}</dd></div>
+      </dl>
+      <p class="horario mut"><app-icon name="clock" [size]="16" /> {{ cfg.horario }}</p>
+    </div>
+
+    <form class="orcamento" #f="ngForm" (ngSubmit)="enviar(f)" novalidate>
+      <h2>Quer um orçamento inicial?</h2>
+      <p>Deixe seus contatos, os dados do veículo e um breve resumo do que precisa. Voltamos em até 1 dia útil.</p>
+      <input name="nome" [(ngModel)]="form.nome" required placeholder="Seu nome" aria-label="Seu nome" autocomplete="name" />
+      @if (f.submitted && f.controls['nome']?.invalid) { <span class="erro">Informe seu nome.</span> }
+      <input name="telefone" [(ngModel)]="form.telefone" required minlength="10" placeholder="Seu telefone" aria-label="Seu telefone" inputmode="tel" autocomplete="tel" />
+      @if (f.submitted && f.controls['telefone']?.invalid) { <span class="erro">Informe um telefone com DDD.</span> }
+      <input name="cep" [(ngModel)]="form.cep" required minlength="8" placeholder="CEP" aria-label="CEP" inputmode="numeric" autocomplete="postal-code" />
+      @if (f.submitted && f.controls['cep']?.invalid) { <span class="erro">Informe seu CEP.</span> }
+      <input name="placa" [(ngModel)]="form.placa" required minlength="7" placeholder="Placa do carro" aria-label="Placa do carro" autocomplete="off" />
+      @if (f.submitted && f.controls['placa']?.invalid) { <span class="erro">Informe a placa do carro.</span> }
+      <input name="veiculo" [(ngModel)]="form.veiculo" required placeholder="Modelo do carro" aria-label="Modelo do carro" />
+      @if (f.submitted && f.controls['veiculo']?.invalid) { <span class="erro">Informe o modelo do carro.</span> }
+      <textarea name="servico" [(ngModel)]="form.servico" required placeholder="Qual serviço você precisa?" aria-label="Qual serviço você precisa?"></textarea>
+      @if (f.submitted && f.controls['servico']?.invalid) { <span class="erro">Conte rapidamente o que você precisa.</span> }
+      <button class="btn primary enviar" type="submit">Enviar solicitação</button>
+      @if (enviado()) { <p class="ok">Recebemos seu pedido. Entraremos em contato em até 1 dia útil.</p> }
+      <small>Ao enviar, você concorda em receber contato da {{ cfg.nome }} para o atendimento do seu veículo.</small>
+    </form>
+  </section>
+</main>
+
+<footer class="rodape">
+  <span>{{ cfg.nome }} · {{ cfg.endereco.replace(' · ', ', ') }} · {{ cfg.telefone }}</span>
+  <button class="adm" type="button" routerLink="/painel">Área Administrativa</button>
+</footer>

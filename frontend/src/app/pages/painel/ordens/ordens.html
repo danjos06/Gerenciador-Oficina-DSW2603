@@ -1,0 +1,85 @@
+<div class="cabeca">
+  <div>
+    <h1 class="pagina-titulo">Ordens de serviço</h1>
+    <p class="pagina-sub">Cadastre, acompanhe e atualize o andamento de cada veículo.</p>
+  </div>
+  <button class="btn primary" (click)="formAberto.set(!formAberto())" [attr.aria-expanded]="formAberto()">
+    <app-icon [name]="formAberto() ? 'x' : 'plus'" [size]="15" /> {{ formAberto() ? 'Fechar' : 'Nova OS' }}
+  </button>
+</div>
+
+@if (formAberto()) {
+  <form class="card nova" #f="ngForm" (ngSubmit)="salvar(f)" novalidate>
+    <h2>Nova ordem de serviço</h2>
+    <div class="grade-form">
+      <label class="campo">Cliente
+        <input name="cliente" [(ngModel)]="novo.cliente" required placeholder="Nome do cliente" />
+        @if (f.submitted && f.controls['cliente']?.invalid) { <span class="erro">Informe o cliente.</span> }
+      </label>
+      <label class="campo">Veículo
+        <input name="veiculo" [(ngModel)]="novo.veiculo" required placeholder="Ex.: Honda Civic" />
+        @if (f.submitted && f.controls['veiculo']?.invalid) { <span class="erro">Informe o veículo.</span> }
+      </label>
+      <label class="campo">Placa
+        <input name="placa" [(ngModel)]="novo.placa" required maxlength="8" placeholder="ABC-1D23" />
+        @if (f.submitted && f.controls['placa']?.invalid) { <span class="erro">Informe a placa.</span> }
+      </label>
+      <label class="campo">Serviço
+        <input name="servico" [(ngModel)]="novo.servico" required placeholder="Ex.: Revisão e freios" />
+        @if (f.submitted && f.controls['servico']?.invalid) { <span class="erro">Informe o serviço.</span> }
+      </label>
+      <label class="campo">Valor (R$)
+        <input name="valor" type="number" min="0" step="0.01" [(ngModel)]="novo.valor" required />
+        @if (f.submitted && f.controls['valor']?.invalid) { <span class="erro">Informe o valor.</span> }
+      </label>
+      <label class="campo">Status inicial
+        <select name="status" [(ngModel)]="novo.status">
+          @for (st of statusLista; track st) { <option [value]="st">{{ st }}</option> }
+        </select>
+      </label>
+      <label class="campo">Prazo de entrega (opcional)
+        <input name="entrega" type="datetime-local" [(ngModel)]="novo.entrega" />
+      </label>
+    </div>
+    <div class="acoes"><button class="btn" type="button" (click)="formAberto.set(false)">Cancelar</button><button class="btn primary" type="submit">Criar OS</button></div>
+  </form>
+}
+
+<section class="card lista">
+  <div class="ferramentas">
+    <label class="busca"><app-icon name="search" [size]="15" />
+      <input type="search" placeholder="Buscar por cliente, placa, serviço ou nº da OS" [ngModel]="busca()" (ngModelChange)="busca.set($event)" aria-label="Buscar ordens de serviço" />
+    </label>
+    <div class="filtros" role="group" aria-label="Filtrar por status">
+      @for (st of ['Todas'].concat(statusLista); track st) {
+        <button type="button" class="chip" [class.on]="filtro() === st" (click)="filtro.set($any(st))">{{ st }} <span>{{ contar($any(st)) }}</span></button>
+      }
+    </div>
+  </div>
+
+  <div class="rolagem">
+    <table class="tabela">
+      <thead><tr><th>OS</th><th>Cliente / veículo</th><th>Serviço</th><th>Entrega</th><th>Status</th><th class="dir">Valor</th><th class="dir"><span class="sr">Ações</span></th></tr></thead>
+      <tbody>
+        @for (o of filtradas(); track o.numero) {
+          <tr>
+            <td class="forte">#{{ o.numero }}</td>
+            <td><div class="forte">{{ o.cliente }}</div><div class="sub">{{ o.veiculo }} · {{ o.placa }}</div></td>
+            <td>{{ o.servico }}</td>
+            <td class="mut">{{ o.entrega ? (o.entrega | date: 'dd/MM HH:mm') : '—' }}</td>
+            <td>
+              <select class="status" [class]="'status ' + classeStatus(o.status)" [ngModel]="o.status" (ngModelChange)="mudar(o.numero, $event)" [attr.aria-label]="'Status da OS ' + o.numero">
+                @for (st of statusLista; track st) { <option [value]="st">{{ st }}</option> }
+              </select>
+            </td>
+            <td class="dir forte">{{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
+            <td class="dir"><button class="lixo" (click)="excluir(o.numero)" [attr.aria-label]="'Excluir OS ' + o.numero"><app-icon name="trash" [size]="15" /></button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="vazio">Nenhuma ordem de serviço encontrada.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <footer class="soma"><span class="mut">{{ filtradas().length }} OS</span><strong>{{ total() | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong></footer>
+</section>

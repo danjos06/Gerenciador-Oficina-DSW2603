@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "oficina": {
+    "prototipo-oficina": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -24,17 +24,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "security": {
-              "allowedHosts": []
-            },
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+            "styles": ["src/styles.css"]
           },
           "configurations": {
             "production": {
@@ -64,10 +54,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "oficina:build:production"
+              "buildTarget": "prototipo-oficina:build:production"
             },
             "development": {
-              "buildTarget": "oficina:build:development"
+              "buildTarget": "prototipo-oficina:build:development"
             }
           },
           "defaultConfiguration": "development"
