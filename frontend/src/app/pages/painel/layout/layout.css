@@ -1,7 +1,29 @@
-.shell { display: flex; min-height: 100vh; }
-.coluna { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.lateral { width: 232px; flex: none; background: var(--ink); color: #fff; padding: 20px 14px 14px; display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-.veu { display: none; }
+.shell {
+  display: flex; min-height: 100vh;
+      }
+.coluna {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  }
+.lateral {
+  width: 232px;
+  flex: none;
+  background: var(--ink);
+  color: #fff;
+  padding: 20px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  }
+.veu {
+  display: none;
+  }
 .marca { display: flex; gap: 10px; align-items: center; padding: 0 6px; }
 .marca strong { display: block; color: #fff; font-size: 17px; font-weight: 500; line-height: 1.1; }
 .marca small, .oficina small, .usuario small { display: block; font-size: 10px; letter-spacing: .04em; color: #fff; }

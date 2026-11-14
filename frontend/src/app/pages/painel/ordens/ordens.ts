@@ -4,6 +4,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { Icon } from '../../../shared/icon/icon';
 import { classeStatus } from '../../../shared/status';
 import { STATUS_LISTA, StatusOS } from '../../../entities/oficina';
+import { AuthService } from '../../../services/auth';
 import { OficinaService } from '../../../services/oficina';
 
 @Component({
@@ -14,12 +15,16 @@ import { OficinaService } from '../../../services/oficina';
 })
 export class Ordens {
   s = inject(OficinaService);
+  private auth = inject(AuthService);
+  podeEditar = this.auth.perfil() === 'admin';
   statusLista = STATUS_LISTA;
   classeStatus = classeStatus;
 
   busca = signal('');
   filtro = signal<StatusOS | 'Todas'>('Todas');
   formAberto = signal(false);
+  valorEditando = signal<number | null>(null);
+  novoValor = signal<number | null>(null);
   novo = this.vazio();
 
   filtradas = computed(() => {
@@ -52,6 +57,22 @@ export class Ordens {
 
   excluir(numero: number): void {
     if (typeof confirm === 'undefined' || confirm(`Excluir a OS #${numero}?`)) this.s.excluirOrdem(numero);
+  }
+
+  editarValor(numero: number, valor: number): void {
+    this.valorEditando.set(numero);
+    this.novoValor.set(valor);
+  }
+
+  salvarValor(numero: number): void {
+    if (this.novoValor() === null || !this.s.atualizarValorOrdem(numero, this.novoValor()!)) return;
+    this.valorEditando.set(null);
+    this.novoValor.set(null);
+  }
+
+  cancelarEdicaoValor(): void {
+    this.valorEditando.set(null);
+    this.novoValor.set(null);
   }
 
   mudar(numero: number, status: string): void {

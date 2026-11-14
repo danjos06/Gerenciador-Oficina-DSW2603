@@ -1,15 +1,18 @@
 <div class="cabeca">
   <div>
     <h1 class="pagina-titulo">Sua oficina em números</h1>
-    <p class="pagina-sub">Olá, {{ primeiroNome }}. Veja o resultado do mês e o ritmo da operação.</p>
+    <p class="pagina-sub">Olá, {{ primeiroNome() }}. Veja o resultado do mês e o ritmo da operação.</p>
   </div>
   <div class="botoes">
     <label class="mes btn">
       <app-icon name="calendar" [size]="15" />
       <select [ngModel]="s.mesChave()" (ngModelChange)="s.mesChave.set($event)" aria-label="Mês do relatório">
-        @for (m of meses; track m.chave) { <option [value]="m.chave">{{ m.nome }}</option> }
+        @if (meses().length === 0) { <option value="">Sem período cadastrado</option> }
+        @for (m of meses(); track m.chave) { <option [value]="m.chave">{{ m.nome }}</option> }
       </select>
     </label>
+    <a class="btn" routerLink="/painel/financeiro">Editar dados financeiros</a>
+    <!--Exportar relatório-->
     <button class="btn" (click)="s.exportarRelatorio()"><app-icon name="download" [size]="15" /> Exportar relatório</button>
   </div>
 </div>
@@ -45,7 +48,7 @@
         <line [attr.x1]="grafico().padL" [attr.x2]="grafico().W" [attr.y1]="g.y" [attr.y2]="g.y" stroke="#e8ebee" />
         <text [attr.x]="grafico().padL - 8" [attr.y]="g.y + 3" text-anchor="end" class="eixo">{{ g.rotulo }}</text>
       }
-      @for (b of grafico().barras; track b.rotulo) {
+      @for (b of grafico().barras; track b.chave) {
         <g>
           <title>{{ b.dica }}</title>
           <rect [attr.x]="b.x1" [attr.y]="b.y1" width="17" [attr.height]="b.h1" rx="2" fill="#191e24" />
@@ -53,7 +56,7 @@
         </g>
       }
       <polyline [attr.points]="grafico().linha" fill="none" stroke="#27a9e1" stroke-width="2" stroke-linejoin="round" />
-      @for (b of grafico().barras; track b.rotulo) {
+      @for (b of grafico().barras; track b.chave) {
         <circle [attr.cx]="b.cx" [attr.cy]="b.cy" r="3" fill="#fff" stroke="#27a9e1" stroke-width="2" />
         <text [attr.x]="b.cx" y="178" text-anchor="middle" class="mes-txt" [class.sel]="b.sel">{{ b.rotulo }}</text>
         <text [attr.x]="b.cx" y="196" text-anchor="middle" class="luc-txt">{{ b.lucro }}</text>
@@ -66,21 +69,22 @@
   </article>
 
   <article class="card bloco">
-    <h2>Para onde foi o dinheiro</h2>
-    <p class="pagina-sub">Despesas de {{ s.mesAtual().nome.toLowerCase() }}</p>
+    <h2>Resultado do período</h2>
+    <p class="pagina-sub">{{ s.mesAtual().nome }}</p>
     <p class="total">{{ s.mesAtual().despesas | currency: 'BRL' : 'symbol' : '1.0-0' }} <small class="mut">{{ pctReceita() | number: '1.1-1' }}% da receita</small></p>
-    <div class="segmentos" role="img" aria-label="Composição das despesas">
-      @for (c of composicao(); track c.nome) { <span [style.width.%]="c.pct" [style.background]="c.cor"></span> }
+    <div class="segmentos" role="img" [attr.aria-label]="pctDespesas() + '% da receita registrada como despesa'">
+      <span [style.width.%]="pctDespesas()" style="background:#27a9e1"></span>
     </div>
-    <ul class="composicao">
-      @for (c of composicao(); track c.nome) {
-        <li><i [style.background]="c.cor"></i><span>{{ c.nome }}</span><strong>{{ c.valor | currency: 'BRL' : 'symbol' : '1.0-0' }}</strong><span class="mut">{{ c.pct }}%</span></li>
-      }
+    <ul class="resumo-financeiro">
+      <li><span>Faturamento</span><strong>{{ s.mesAtual().faturamento | currency: 'BRL' : 'symbol' : '1.0-0' }}</strong></li>
+      <li><span>Despesas</span><strong>{{ s.mesAtual().despesas | currency: 'BRL' : 'symbol' : '1.0-0' }}</strong></li>
+      <li><span>Lucro líquido</span><strong>{{ lucro() | currency: 'BRL' : 'symbol' : '1.0-0' }}</strong></li>
+      <li><span>Ordens concluídas</span><strong>{{ s.mesAtual().concluidas }}</strong></li>
     </ul>
     @if (difDespesas(); as d) {
       <p class="aviso"><app-icon [name]="d > 0 ? 'arrow-up-right' : 'arrow-down-right'" [size]="13" /> {{ abs(d) | currency: 'BRL' : 'symbol' : '1.0-0' }} a {{ d > 0 ? 'mais' : 'menos' }} em despesas vs. {{ s.mesAnterior()!.nome.split(' ')[0].toLowerCase() }}.</p>
     }
-    <p class="pagina-sub">Valores pagos e lançados no período.</p>
+    <a class="ver" routerLink="/painel/financeiro">Gerenciar valores do mês <app-icon name="arrow-up-right" [size]="13" /></a>
   </article>
 </section>
 
@@ -136,5 +140,5 @@
 
 <footer class="notas">
   <span>Financeiro: {{ periodo() }} · Operação: {{ hojeCurto }}</span>
-  <a href="mailto:contato@torque.com.br"><app-icon name="help" [size]="13" /> Precisa de ajuda?</a>
+  <a href="mailto:oficinadojoe@gmail.com"><app-icon name="help" [size]="13" /> Precisa de ajuda?</a>
 </footer>

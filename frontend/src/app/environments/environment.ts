@@ -8,5 +8,12 @@ export const environment = {
     endereco: 'R. Laguna, 1128 - Jardim Caravelas, São Paulo - SP',
     horario: 'Segunda a sexta, das 8h às 17h · agendamento online e atendimento presencial.',
   },
-  usuario: { nome: 'João Carlos', papel: 'Administrador'},
+  usuario: { nome: 'João Carlos', papel: 'Administrador' },
+  auth: {
+    admin: {
+      email: 'admin@oficina.com',
+      senha: 'admin123',
+      nome: 'João Carlos',
+    },
+  },
 };

@@ -1,5 +1,6 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Cliente, ClienteResumo, MesFinanceiro, OrdemServico, Solicitacao, StatusOS, VeiculoCliente } from '../entities/oficina';
+import { AuthService } from './auth';
 
 export const MESES: MesFinanceiro[] = [
   { chave: '2026-03', nome: 'Março de 2026', abrev: 'Mar', faturamento: 30000, despesas: 23000, concluidas: 33 },
@@ -11,7 +12,27 @@ export const MESES: MesFinanceiro[] = [
   { chave: '2026-09', nome: 'Setembro de 2026', abrev: 'Set', faturamento: 48600, despesas: 32400, concluidas: 54 },
 ];
 
-const CHAVE_ARMAZENAMENTO = 'torque.dados.v1';
+const CHAVE_ARMAZENAMENTO = 'oficina-do-joe.dados.v1';
+const CHAVE_ARMAZENAMENTO_ANTIGA = 'torque.dados.v1';
+const MES_VAZIO: MesFinanceiro = {
+  chave: '',
+  nome: 'Sem período cadastrado',
+  abrev: '—',
+  faturamento: 0,
+  despesas: 0,
+  concluidas: 0,
+};
+
+function descreverMes(chave: string): Pick<MesFinanceiro, 'nome' | 'abrev'> {
+  const [ano, mes] = chave.split('-').map(Number);
+  const data = new Date(ano, mes - 1, 1);
+  const nome = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(data);
+  const abrev = new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(data).replace('.', '');
+  return {
+    nome: nome.charAt(0).toLocaleUpperCase('pt-BR') + nome.slice(1),
+    abrev: abrev.charAt(0).toLocaleUpperCase('pt-BR') + abrev.slice(1),
+  };
+}
 
 function quando(dias: number, hora = 9): string {
   const d = new Date();
@@ -40,7 +61,10 @@ function sementeOrdens(): OrdemServico[] {
 
 @Injectable({ providedIn: 'root' })
 export class OficinaService {
+  private readonly auth = inject(AuthService);
   readonly ordens = signal<OrdemServico[]>(sementeOrdens());
+  readonly meses = signal<MesFinanceiro[]>([...MESES]);
+  readonly mesesOrdenados = computed(() => [...this.meses()].sort((a, b) => a.chave.localeCompare(b.chave)));
   readonly solicitacoes = signal<Solicitacao[]>([]);
   readonly registrosClientes = signal<Cliente[]>([]);
   readonly mesChave = signal('2026-09');
@@ -61,9 +85,12 @@ export class OficinaService {
   );
 
   // ---- derivados: financeiro ----
-  readonly mesIndice = computed(() => MESES.findIndex((m) => m.chave === this.mesChave()));
-  readonly mesAtual = computed(() => MESES[this.mesIndice()]);
-  readonly mesAnterior = computed(() => MESES[this.mesIndice() - 1] as MesFinanceiro | undefined);
+  readonly mesIndice = computed(() => this.mesesOrdenados().findIndex((m) => m.chave === this.mesChave()));
+  readonly mesAtual = computed(() => this.meses().find((m) => m.chave === this.mesChave()) ?? MES_VAZIO);
+  readonly mesAnterior = computed(() => {
+    const indice = this.mesIndice();
+    return indice > 0 ? this.mesesOrdenados()[indice - 1] : undefined;
+  });
 
   // ---- derivados: cadastros ----
   readonly clientes = computed<ClienteResumo[]>(() => {
@@ -102,11 +129,66 @@ export class OficinaService {
 
   constructor() {
     this.carregar();
-    effect(() => this.salvar(this.ordens(), this.solicitacoes(), this.registrosClientes()));
+    effect(() => this.salvar(this.ordens(), this.solicitacoes(), this.registrosClientes(), this.meses(), this.mesChave()));
   }
 
   // ---- ações ----
+  adicionarMes(dados: Pick<MesFinanceiro, 'chave' | 'faturamento' | 'despesas' | 'concluidas'>): boolean {
+    if (!this.somenteAdmin()) return false;
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(dados.chave)
+      || !Number.isFinite(dados.faturamento) || dados.faturamento < 0
+      || !Number.isFinite(dados.despesas) || dados.despesas < 0
+      || !Number.isInteger(dados.concluidas) || dados.concluidas < 0) {
+      this.notificar('Informe um mês válido e valores financeiros não negativos.');
+      return false;
+    }
+    if (this.meses().some((mes) => mes.chave === dados.chave)) {
+      this.notificar('Já existe um registro financeiro para esse mês.');
+      return false;
+    }
+
+    this.meses.update((lista) => [...lista, { ...dados, ...descreverMes(dados.chave) }]);
+    this.mesChave.set(dados.chave);
+    this.notificar('Registro financeiro cadastrado.');
+    return true;
+  }
+
+  atualizarMes(chave: string, dados: Pick<MesFinanceiro, 'faturamento' | 'despesas' | 'concluidas'>): boolean {
+    if (!this.somenteAdmin()) return false;
+    if (!Number.isFinite(dados.faturamento) || dados.faturamento < 0
+      || !Number.isFinite(dados.despesas) || dados.despesas < 0
+      || !Number.isInteger(dados.concluidas) || dados.concluidas < 0) {
+      this.notificar('Informe valores financeiros válidos e não negativos.');
+      return false;
+    }
+    if (!this.meses().some((mes) => mes.chave === chave)) {
+      this.notificar('O registro financeiro não foi encontrado.');
+      return false;
+    }
+
+    this.meses.update((lista) => lista.map((mes) => mes.chave === chave ? { ...mes, ...dados } : mes));
+    this.notificar('Registro financeiro atualizado.');
+    return true;
+  }
+
+  excluirMes(chave: string): void {
+    if (!this.somenteAdmin()) return;
+    const restante = this.meses().filter((mes) => mes.chave !== chave);
+    if (restante.length === this.meses().length) {
+      this.notificar('O registro financeiro não foi encontrado.');
+      return;
+    }
+
+    this.meses.set(restante);
+    if (this.mesChave() === chave) {
+      const maisRecente = [...restante].sort((a, b) => b.chave.localeCompare(a.chave))[0];
+      this.mesChave.set(maisRecente?.chave ?? '');
+    }
+    this.notificar('Registro financeiro excluído.');
+  }
+
   criarOrdem(d: { cliente: string; veiculo: string; placa: string; servico: string; valor: number; status: StatusOS; entrega?: string }): void {
+    if (!this.somenteAdmin()) return;
     const numero = Math.max(1000, ...this.ordens().map((o) => o.numero)) + 1;
     const nova: OrdemServico = {
       numero,
@@ -126,6 +208,7 @@ export class OficinaService {
   }
 
   mudarStatus(numero: number, status: StatusOS): void {
+    if (!this.somenteAdmin()) return;
     this.ordens.update((l) =>
       l.map((o) => {
         if (o.numero !== numero) return o;
@@ -137,23 +220,46 @@ export class OficinaService {
   }
 
   excluirOrdem(numero: number): void {
+    if (!this.somenteAdmin()) return;
     this.ordens.update((l) => l.filter((o) => o.numero !== numero));
     this.notificar(`OS #${numero} excluída.`);
   }
 
-  enviarSolicitacao(nome: string, telefone: string, servico: string, cep: string, placa: string, veiculo: string): void {
+  atualizarValorOrdem(numero: number, valor: number): boolean {
+    if (!this.somenteAdmin()) return false;
+    if (!Number.isFinite(valor) || valor < 0) {
+      this.notificar('Informe um valor válido e não negativo.');
+      return false;
+    }
+    if (!this.ordens().some((ordem) => ordem.numero === numero)) {
+      this.notificar('Ordem de serviço não encontrada.');
+      return false;
+    }
+
+    this.ordens.update((lista) => lista.map((ordem) => ordem.numero === numero ? { ...ordem, valor } : ordem));
+    this.notificar(`Valor da OS #${numero} atualizado.`);
+    return true;
+  }
+
+  enviarSolicitacao(nome: string, telefone: string, servico: string, cep: string, placa: string, veiculo: string, email?: string): void {
     const id = Date.now();
     const nomeLimpo = nome.trim();
     const telefoneLimpo = telefone.trim();
     const placaLimpa = placa.trim().toUpperCase();
-    this.salvarCadastroCliente({ nome: nomeLimpo, telefone: telefoneLimpo, cep: cep.trim(), placa: placaLimpa, modelo: veiculo.trim() });
+    const emailLimpo = email?.trim().toLowerCase();
+    this.salvarCadastroClienteInterno({ nome: nomeLimpo, telefone: telefoneLimpo, cep: cep.trim(), placa: placaLimpa, modelo: veiculo.trim() });
     this.solicitacoes.update((l) => [{
-      id, nome: nomeLimpo, telefone: telefoneLimpo, servico: servico.trim(), cep: cep.trim(),
+      id, email: emailLimpo, nome: nomeLimpo, telefone: telefoneLimpo, servico: servico.trim(), cep: cep.trim(),
       placa: placaLimpa, veiculo: veiculo.trim(), criadaEm: new Date().toISOString(),
     }, ...l]);
   }
 
   salvarCadastroCliente(dados: { nome: string; telefone: string; cep: string; placa: string; modelo: string }, id?: number): void {
+    if (!this.somenteAdmin()) return;
+    this.salvarCadastroClienteInterno(dados, id);
+  }
+
+  private salvarCadastroClienteInterno(dados: { nome: string; telefone: string; cep: string; placa: string; modelo: string }, id?: number): void {
     const nome = dados.nome.trim();
     const veiculo = dados.modelo.trim();
     const placa = dados.placa.trim().toUpperCase();
@@ -184,13 +290,14 @@ export class OficinaService {
   }
 
   excluirCliente(id: number): void {
+    if (!this.somenteAdmin()) return;
     this.registrosClientes.update((lista) => lista.filter((c) => c.id !== id));
     this.notificar('Cliente excluído.');
   }
 
   private adicionarVeiculoAoCliente(nome: string, modelo: string, placa: string): void {
     const existente = this.registrosClientes().find((c) => c.nome.toLocaleLowerCase() === nome.toLocaleLowerCase());
-    this.salvarCadastroCliente({
+    this.salvarCadastroClienteInterno({
       nome,
       telefone: existente?.telefone ?? '',
       cep: existente?.cep ?? '',
@@ -200,10 +307,38 @@ export class OficinaService {
   }
 
   atenderSolicitacao(id: number): void {
+    if (!this.somenteAdmin()) return;
     this.solicitacoes.update((l) => l.filter((s) => s.id !== id));
     this.notificar('Solicitação marcada como atendida.');
   }
 
+  transformarSolicitacaoEmOrdem(s: Solicitacao): void {
+    if (!this.somenteAdmin()) return;
+    const numero = Math.max(1000, ...this.ordens().map((o) => o.numero)) + 1;
+    const nova: OrdemServico = {
+      numero,
+      cliente: s.nome,
+      veiculo: s.veiculo,
+      placa: s.placa,
+      servico: s.servico,
+      status: 'Em diagnóstico',
+      valor: 0,
+      box: true,
+      criadaEm: new Date().toISOString(),
+    };
+
+    this.ordens.update((lista) => [nova, ...lista]);
+    this.atenderSolicitacao(s.id);
+    this.notificar(`OS #${numero} criada a partir da solicitação.`);
+  }
+
+  private somenteAdmin(): boolean {
+    if (this.auth.perfil() === 'admin') return true;
+    this.notificar('Somente um administrador pode fazer alterações.');
+    return false;
+  }
+
+  //Exporta Relatório
   exportarRelatorio(): void {
     const m = this.mesAtual();
     const linhas = [
@@ -220,7 +355,7 @@ export class OficinaService {
     const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `torque-relatorio-${m.chave}.csv`;
+    a.download = `oficina-do-joe-relatorio-${m.chave}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     this.notificar('Relatório exportado.');
@@ -232,21 +367,31 @@ export class OficinaService {
     this.timer = setTimeout(() => this.toast.set(null), 4000);
   }
 
-  // ---- persistência local (opcional) ----
+  //Persistência Local
   private carregar(): void {
     try {
-      const bruto = typeof localStorage !== 'undefined' ? localStorage.getItem(CHAVE_ARMAZENAMENTO) : null;
+      const bruto = typeof localStorage !== 'undefined'
+        ? localStorage.getItem(CHAVE_ARMAZENAMENTO) ?? localStorage.getItem(CHAVE_ARMAZENAMENTO_ANTIGA)
+        : null;
+      if (bruto && typeof localStorage !== 'undefined' && !localStorage.getItem(CHAVE_ARMAZENAMENTO)) {
+        localStorage.setItem(CHAVE_ARMAZENAMENTO, bruto);
+      }
       if (!bruto) {
         this.migrarClientesDasOrdens();
         return;
       }
       const d = JSON.parse(bruto);
       if (Array.isArray(d.ordens)) this.ordens.set(d.ordens);
+      if (Array.isArray(d.meses)) this.meses.set(d.meses);
+      if (typeof d.mesChave === 'string') this.mesChave.set(d.mesChave);
       if (Array.isArray(d.solicitacoes)) this.solicitacoes.set(d.solicitacoes);
       if (Array.isArray(d.clientes)) this.registrosClientes.set(d.clientes);
       else this.migrarClientesDasOrdens();
+      if (!this.meses().some((mes) => mes.chave === this.mesChave())) {
+        const maisRecente = [...this.meses()].sort((a, b) => b.chave.localeCompare(a.chave))[0];
+        this.mesChave.set(maisRecente?.chave ?? '');
+      }
     } catch {
-      /* dados corrompidos: segue com a semente */
     }
   }
 
@@ -269,11 +414,9 @@ export class OficinaService {
     this.registrosClientes.set([...clientes.values()]);
   }
 
-  private salvar(ordens: OrdemServico[], solicitacoes: Solicitacao[], clientes: Cliente[]): void {
+  private salvar(ordens: OrdemServico[], solicitacoes: Solicitacao[], clientes: Cliente[], meses: MesFinanceiro[], mesChave: string): void {
     try {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(CHAVE_ARMAZENAMENTO, JSON.stringify({ ordens, solicitacoes, clientes }));
-    } catch {
-      /* armazenamento indisponível */
-    }
+      if (typeof localStorage !== 'undefined') localStorage.setItem(CHAVE_ARMAZENAMENTO, JSON.stringify({ ordens, solicitacoes, clientes, meses, mesChave }));
+    } catch {}
   }
 }

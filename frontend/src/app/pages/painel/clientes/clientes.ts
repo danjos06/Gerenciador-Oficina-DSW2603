@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ClienteResumo } from '../../../entities/oficina';
+import { AuthService } from '../../../services/auth';
 import { OficinaService } from '../../../services/oficina';
 
 @Component({
@@ -13,10 +14,10 @@ import { OficinaService } from '../../../services/oficina';
         <h1 class="pagina-titulo">Clientes</h1>
         <p class="pagina-sub">Cadastre e mantenha os dados dos clientes e seus veículos.</p>
       </div>
-      <button class="btn" type="button" (click)="abrirNovo()">Novo cliente</button>
+      @if (podeEditar) { <button class="btn" type="button" (click)="abrirNovo()">Novo cliente</button> }
     </div>
 
-    @if (formAberto) {
+    @if (podeEditar && formAberto) {
       <form class="card editor" #f="ngForm" (ngSubmit)="salvar(f)" novalidate>
         <h2>{{ clienteEditando === null ? 'Novo cliente' : 'Editar cliente' }}</h2>
         <div class="campos">
@@ -40,10 +41,16 @@ import { OficinaService } from '../../../services/oficina';
         <div class="sol">
           <div>
             <strong>{{ x.nome }}</strong> · {{ x.telefone }}
+            @if (x.email) { <span class="mut"> · {{ x.email }}</span> }
             <p class="mut">{{ x.veiculo }} · {{ x.placa }} · CEP {{ x.cep }}</p>
             <p class="mut">{{ x.servico }} <small>({{ x.criadaEm | date: 'dd/MM HH:mm' }})</small></p>
           </div>
-          <button class="btn sm" (click)="s.atenderSolicitacao(x.id)">Marcar como atendida</button>
+          @if (podeEditar) {
+            <div class="acoes-solicitacao">
+              <button class="btn sm" (click)="s.transformarSolicitacaoEmOrdem(x)">Transformar em ordem</button>
+              <button class="btn sm" (click)="s.atenderSolicitacao(x.id)">Marcar como atendida</button>
+            </div>
+          }
         </div>
       } @empty {
         <p class="mut vazio">Nenhum pedido novo. Os envios do formulário da landing page aparecem aqui.</p>
@@ -53,7 +60,7 @@ import { OficinaService } from '../../../services/oficina';
     <section class="card lista">
       <div class="rolagem">
         <table class="tabela">
-          <thead><tr><th>Cliente</th><th>Contato</th><th>CEP</th><th>Veículos</th><th class="dir">OS</th><th class="dir">Total</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Cliente</th><th>Contato</th><th>CEP</th><th>Veículos</th><th class="dir">OS</th><th class="dir">Total</th>@if (podeEditar) { <th>Ações</th> }</tr></thead>
           <tbody>
             @for (c of s.clientes(); track c.id) {
               <tr>
@@ -63,13 +70,15 @@ import { OficinaService } from '../../../services/oficina';
                 <td>@for (v of c.veiculos; track v.placa) { <div class="sub">{{ v.modelo }} · {{ v.placa }}</div> }</td>
                 <td class="dir">{{ c.os }}</td>
                 <td class="dir forte">{{ c.total | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
-                <td class="acoes-linha">
-                  <button class="btn sm" type="button" (click)="editar(c)">Editar</button>
-                  <button class="btn sm excluir" type="button" (click)="excluir(c.id, c.nome)">Excluir</button>
-                </td>
+                @if (podeEditar) {
+                  <td class="acoes-linha">
+                    <button class="btn sm" type="button" (click)="editar(c)">Editar</button>
+                    <button class="btn sm excluir" type="button" (click)="excluir(c.id, c.nome)">Excluir</button>
+                  </td>
+                }
               </tr>
             }
-            @empty { <tr><td colspan="7" class="mut vazio">Nenhum cliente cadastrado.</td></tr> }
+            @empty { <tr><td [attr.colspan]="podeEditar ? 7 : 6" class="mut vazio">Nenhum cliente cadastrado.</td></tr> }
           </tbody>
         </table>
       </div>
@@ -87,6 +96,7 @@ import { OficinaService } from '../../../services/oficina';
     .bloco h2{font-size:16px;font-weight:500;display:flex;gap:8px;align-items:center}
     .sol{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#f4f6f8;border-radius:10px;padding:12px 14px;flex-wrap:wrap}
     .sol p{margin-top:4px}
+    .acoes-solicitacao{display:flex;gap:8px;flex-wrap:wrap}
     .vazio{padding:8px 0;text-align:center}
     .lista{overflow:hidden}.rolagem{overflow-x:auto}.rolagem .tabela{min-width:560px}
     .acoes-linha{display:flex;gap:6px}
@@ -96,6 +106,7 @@ import { OficinaService } from '../../../services/oficina';
 })
 export class Clientes {
   s = inject(OficinaService);
+  podeEditar = inject(AuthService).perfil() === 'admin';
   formAberto = false;
   clienteEditando: number | null = null;
   form = this.vazio();

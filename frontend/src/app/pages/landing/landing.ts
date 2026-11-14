@@ -2,6 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../../services/auth';
+import { cepTemFormatoValido, consultarCep, mascararCep, montarLinkWhatsapp, soDigitos } from '../../shared/contato';
 import { Icon } from '../../shared/icon/icon';
 import { OficinaService } from '../../services/oficina';
 
@@ -15,6 +17,7 @@ interface Servico { icone: string; titulo: string; desc: string }
 })
 export class Landing {
   private s = inject(OficinaService);
+  private auth = inject(AuthService);
   cfg = environment.oficina;
   ano = new Date().getFullYear();
 
@@ -36,9 +39,22 @@ export class Landing {
 
   form = { nome: '', telefone: '', cep: '', placa: '', veiculo: '', servico: '' };
   enviado = signal(false);
+  erroCep = signal('');
+  enviando = signal(false);
 
   rolar(id: string): void {
     if (typeof document !== 'undefined') document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  aoDigitarTelefone(event: Event): void {
+    if (!(event.target instanceof HTMLInputElement)) return;
+    event.target.value = soDigitos(event.target.value).slice(0, 11);
+    this.form.telefone = event.target.value;
+  }
+
+  aoDigitarCep(): void {
+    this.form.cep = mascararCep(this.form.cep);
+    this.erroCep.set('');
   }
 
   pedirServico(texto: string): void {
@@ -47,15 +63,50 @@ export class Landing {
     this.rolar('contato');
   }
 
-  enviar(f: NgForm): void {
+  async enviar(f: NgForm): Promise<void> {
     if (f.invalid) {
       f.control.markAllAsTouched();
       return;
     }
-    this.s.enviarSolicitacao(this.form.nome, this.form.telefone, this.form.servico, this.form.cep, this.form.placa, this.form.veiculo);
+
+    if (!cepTemFormatoValido(this.form.cep)) {
+      this.erroCep.set('CEP inválido. Use 8 números, ex.: 04567-000.');
+      return;
+    }
+
+    const dados = { ...this.form };
+    const emailCliente = this.auth.sessao()?.email;
+    this.s.enviarSolicitacao(dados.nome, dados.telefone, dados.servico, dados.cep, dados.placa, dados.veiculo, emailCliente);
+
+    const aba = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
+    let endereco = '';
+    this.enviando.set(true);
+    try {
+      const info = await consultarCep(dados.cep);
+      if (info) endereco = `${info.logradouro}, ${info.bairro} - ${info.localidade}/${info.uf}`;
+    } catch {
+      endereco = '';
+    } finally {
+      this.enviando.set(false);
+    }
+
+    const link = montarLinkWhatsapp({
+      nome: dados.nome,
+      telefone: dados.telefone,
+      cep: dados.cep,
+      endereco,
+      placa: dados.placa,
+      veiculo: dados.veiculo,
+      servico: dados.servico,
+    });
+    if (typeof window !== 'undefined') {
+      if (aba) aba.location.href = link;
+      else window.location.assign(link);
+    }
+
     this.form = { nome: '', telefone: '', cep: '', placa: '', veiculo: '', servico: '' };
     f.resetForm(this.form);
     this.enviado.set(true);
-    this.s.notificar('Solicitação enviada! Voltamos em até 1 dia útil.');
+    this.s.notificar('Solicitação enviada! Entraremos em contato em até 1 dia útil.');
   }
 }
