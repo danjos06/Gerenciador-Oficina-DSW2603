@@ -19,7 +19,7 @@
       <div class="rodape-lateral">
       
         <div class="usuario">
-          <div><strong>{{ cfg.usuario.nome }}</strong><small>{{ cfg.usuario.papel }}</small></div>
+          <div><strong>{{ auth.sessao()?.nome ?? cfg.usuario.nome }}</strong><small>{{ auth.perfil() === 'funcionario' ? 'Funcionário' : cfg.usuario.papel }}</small></div>
           <button class="sair" (click)="sair()" aria-label="Sair" title="Sair"><app-icon name="log-out" [size]="16" /></button>
         </div>
       </div>
@@ -30,8 +30,9 @@
     <header class="barra">
       <span class="trilha"><span class="mut">Oficina</span><span class="mut">/</span><strong>{{ titulo() }}</strong></span>
       <span class="direita">
+        <!--Quando foi atualizado-->
         <span class="mut atualizado">Atualizado às {{ atualizado }}</span>
-        <span class="selo">Acesso administrativo</span>
+        <span class="selo">{{ auth.perfil() === 'funcionario' ? 'Acesso para consulta' : 'Acesso administrativo' }}</span>
       </span>
     </header>
     <main class="miolo"><router-outlet /></main>

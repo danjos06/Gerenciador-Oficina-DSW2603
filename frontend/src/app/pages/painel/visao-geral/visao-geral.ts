@@ -5,10 +5,11 @@ import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Icon } from '../../../shared/icon/icon';
 import { classeStatus } from '../../../shared/status';
-import { MESES, OficinaService } from '../../../services/oficina';
+import { AuthService } from '../../../services/auth';
+import { OficinaService } from '../../../services/oficina';
 
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
-const pct = (a: number, b: number) => ((a - b) / b) * 100;
+const pct = (a: number, b: number) => b === 0 ? (a === 0 ? 0 : null) : ((a - b) / b) * 100;
 
 @Component({
   selector: 'app-visao-geral',
@@ -18,8 +19,9 @@ const pct = (a: number, b: number) => ((a - b) / b) * 100;
 })
 export class VisaoGeral {
   s = inject(OficinaService);
-  primeiroNome = environment.usuario.nome.split(' ')[0];
-  meses = MESES;
+  private auth = inject(AuthService);
+  primeiroNome = computed(() => (this.auth.sessao()?.nome ?? environment.usuario.nome).split(' ')[0]);
+  meses = this.s.mesesOrdenados;
   abs = Math.abs;
   classeStatus = classeStatus;
   hoje = (() => {
@@ -29,9 +31,13 @@ export class VisaoGeral {
   boxes = Array.from({ length: this.s.boxesTotal }, (_, i) => i);
 
   lucro = computed(() => this.s.mesAtual().faturamento - this.s.mesAtual().despesas);
-  margem = computed(() => (this.lucro() / this.s.mesAtual().faturamento) * 100);
+  margem = computed(() => this.s.mesAtual().faturamento
+    ? (this.lucro() / this.s.mesAtual().faturamento) * 100
+    : 0);
   periodo = computed(() => {
-    const [a, m] = this.s.mesAtual().chave.split('-').map(Number);
+    const chave = this.s.mesAtual().chave;
+    if (!chave) return 'Sem período financeiro cadastrado';
+    const [a, m] = chave.split('-').map(Number);
     const ultimo = new Date(a, m, 0).getDate();
     const mm = String(m).padStart(2, '0');
     return `01/${mm}/${a} a ${ultimo}/${mm}/${a}`;
@@ -48,21 +54,14 @@ export class VisaoGeral {
       { rotulo: 'Faturamento', valor: m.faturamento, icone: 'arrow-down-left', delta: p ? pct(m.faturamento, p.faturamento) : null, rodape: ant, destaque: '', escuro: false },
       { rotulo: 'Despesas', valor: m.despesas, icone: 'arrow-up-right', delta: p ? pct(m.despesas, p.despesas) : null, rodape: ant, destaque: '', escuro: false },
       { rotulo: 'Lucro líquido', valor: luc, icone: 'trending-up', delta: p ? pct(luc, p.faturamento - p.despesas) : null, rodape: ant, destaque: '', escuro: true },
-      { rotulo: 'Ticket médio', valor: Math.round(m.faturamento / m.concluidas), icone: 'receipt', delta: null, rodape: `concluídas em ${m.nome.split(' ')[0].toLowerCase()}`, destaque: `${m.concluidas} OS`, escuro: false },
+      { rotulo: 'Ticket médio', valor: m.concluidas ? Math.round(m.faturamento / m.concluidas) : 0, icone: 'receipt', delta: null, rodape: `concluídas em ${m.nome.split(' ')[0].toLowerCase()}`, destaque: `${m.concluidas} OS`, escuro: false },
     ];
   });
 
-  composicao = computed(() => {
-    const d = this.s.mesAtual().despesas;
-    const base = [
-      { nome: 'Peças e insumos', pct: 55, cor: '#191e24' },
-      { nome: 'Equipe', pct: 25, cor: '#6a7581' },
-      { nome: 'Estrutura e contas', pct: 14, cor: '#b7bec6' },
-      { nome: 'Impostos e taxas', pct: 6, cor: '#27a9e1' },
-    ];
-    return base.map((b) => ({ ...b, valor: Math.round((d * b.pct) / 100) }));
-  });
-  pctReceita = computed(() => (this.s.mesAtual().despesas / this.s.mesAtual().faturamento) * 100);
+  pctReceita = computed(() => this.s.mesAtual().faturamento
+    ? (this.s.mesAtual().despesas / this.s.mesAtual().faturamento) * 100
+    : 0);
+  pctDespesas = computed(() => Math.min(100, this.pctReceita()));
   difDespesas = computed(() => {
     const p = this.s.mesAnterior();
     return p ? this.s.mesAtual().despesas - p.despesas : null;
@@ -70,17 +69,19 @@ export class VisaoGeral {
 
   // gráfico
   grafico = computed(() => {
-    const W = 600, padL = 46, padR = 6, topo = 8, base = 158, max = 60000;
+    const W = 600, padL = 46, padR = 6, topo = 8, base = 158;
     const idx = this.s.mesIndice();
     const ini = Math.max(0, idx - 5);
-    const lista = MESES.slice(ini, ini + 6);
+    const lista = this.s.mesesOrdenados().slice(ini, ini + 6);
+    const maiorValor = Math.max(0, ...lista.flatMap((m) => [m.faturamento, m.despesas]));
+    const max = Math.max(10000, Math.ceil(maiorValor / 10000) * 10000);
     const gw = (W - padL - padR) / lista.length;
     const y = (v: number) => base - (Math.max(0, v) / max) * (base - topo);
     const barras = lista.map((m, i) => {
       const cx = padL + (i + 0.5) * gw;
       const luc = m.faturamento - m.despesas;
       return {
-        rotulo: m.abrev, sel: m.chave === this.s.mesChave(), cx, cy: y(luc),
+        chave: m.chave, rotulo: m.abrev, sel: m.chave === this.s.mesChave(), cx, cy: y(luc),
         x1: cx - 19, y1: y(m.faturamento), h1: base - y(m.faturamento),
         x2: cx + 3, y2: y(m.despesas), h2: base - y(m.despesas),
         lucro: `${(luc / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1 })} mil`,
@@ -90,7 +91,10 @@ export class VisaoGeral {
     return {
       barras,
       linha: barras.map((b) => `${b.cx},${b.cy}`).join(' '),
-      grades: [0, 15000, 30000, 45000, 60000].map((v) => ({ y: y(v), rotulo: v === 0 ? '0' : `${v / 1000} mil` })),
+      grades: [0, 0.25, 0.5, 0.75, 1].map((fracao) => {
+        const valor = max * fracao;
+        return { y: y(valor), rotulo: valor === 0 ? '0' : `${valor / 1000} mil` };
+      }),
       W, padL,
     };
   });

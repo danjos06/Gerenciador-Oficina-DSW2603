@@ -3,12 +3,14 @@
     <h1 class="pagina-titulo">Ordens de serviço</h1>
     <p class="pagina-sub">Cadastre, acompanhe e atualize o andamento de cada veículo.</p>
   </div>
-  <button class="btn primary" (click)="formAberto.set(!formAberto())" [attr.aria-expanded]="formAberto()">
-    <app-icon [name]="formAberto() ? 'x' : 'plus'" [size]="15" /> {{ formAberto() ? 'Fechar' : 'Nova OS' }}
-  </button>
+  @if (podeEditar) {
+    <button class="btn primary" (click)="formAberto.set(!formAberto())" [attr.aria-expanded]="formAberto()">
+      <app-icon [name]="formAberto() ? 'x' : 'plus'" [size]="15" /> {{ formAberto() ? 'Fechar' : 'Nova OS' }}
+    </button>
+  }
 </div>
 
-@if (formAberto()) {
+@if (podeEditar && formAberto()) {
   <form class="card nova" #f="ngForm" (ngSubmit)="salvar(f)" novalidate>
     <h2>Nova ordem de serviço</h2>
     <div class="grade-form">
@@ -68,12 +70,36 @@
             <td>{{ o.servico }}</td>
             <td class="mut">{{ o.entrega ? (o.entrega | date: 'dd/MM HH:mm') : '—' }}</td>
             <td>
-              <select class="status" [class]="'status ' + classeStatus(o.status)" [ngModel]="o.status" (ngModelChange)="mudar(o.numero, $event)" [attr.aria-label]="'Status da OS ' + o.numero">
-                @for (st of statusLista; track st) { <option [value]="st">{{ st }}</option> }
-              </select>
+              @if (podeEditar) {
+                <select class="status" [class]="'status ' + classeStatus(o.status)" [ngModel]="o.status" [name]="'status-' + o.numero" (ngModelChange)="mudar(o.numero, $event)" [attr.aria-label]="'Status da OS ' + o.numero">
+                  @for (st of statusLista; track st) { <option [value]="st">{{ st }}</option> }
+                </select>
+              } @else {
+                <span class="status" [class]="'status ' + classeStatus(o.status)">{{ o.status }}</span>
+              }
             </td>
-            <td class="dir forte">{{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
-            <td class="dir"><button class="lixo" (click)="excluir(o.numero)" [attr.aria-label]="'Excluir OS ' + o.numero"><app-icon name="trash" [size]="15" /></button></td>
+            <td class="dir forte">
+              @if (podeEditar && valorEditando() === o.numero) {
+                <input class="valor-edicao" type="number" min="0" step="0.01" [ngModel]="novoValor()" [name]="'valor-' + o.numero" (ngModelChange)="novoValor.set($event === null ? null : +$event)" [attr.aria-label]="'Novo valor da OS ' + o.numero" />
+              } @else {
+                {{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}
+              }
+            </td>
+            <td class="dir">
+              @if (podeEditar) {
+                @if (valorEditando() === o.numero) {
+                  <div class="acoes-valor">
+                    <button class="btn sm" type="button" (click)="salvarValor(o.numero)">Salvar</button>
+                    <button class="btn sm" type="button" (click)="cancelarEdicaoValor()">Cancelar</button>
+                  </div>
+                } @else {
+                  <div class="acoes-valor">
+                    <button class="btn sm" type="button" (click)="editarValor(o.numero, o.valor)">Editar valor</button>
+                    <button class="lixo" type="button" (click)="excluir(o.numero)" [attr.aria-label]="'Excluir OS ' + o.numero"><app-icon name="trash" [size]="15" /></button>
+                  </div>
+                }
+              }
+            </td>
           </tr>
         } @empty {
           <tr><td colspan="7" class="vazio">Nenhuma ordem de serviço encontrada.</td></tr>

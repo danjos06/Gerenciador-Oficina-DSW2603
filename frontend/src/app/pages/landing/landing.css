@@ -59,6 +59,18 @@ gap: 14px;
    gap: 10px;
 }
 
+.btn.branco {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  border-color: var(--line);
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
 .btn.grande { 
   height: 40px;
   padding: 0 18px;
@@ -151,7 +163,7 @@ overflow: hidden;
 aspect-ratio: 456 / 150;
 }
 
-.hero-img svg, .hero-img .foto {
+.hero-img .foto {
 position: absolute;
 inset: 0;
 width: 100%;
@@ -159,8 +171,8 @@ height: 100%;
 }
 
 .foto {
-height: 100px;
-width: 100px;
+object-fit: contain;
+background: #dce0e2;
 }
 
 .secao h2, .bloco h2, .fale h2 {
@@ -370,6 +382,5 @@ border-radius: 6px;
 @media (max-width: 680px) {
   .g4, .g3, .pontos, .dados { grid-template-columns: 1fr; }
   .nome-oficina, .sep { display: none; }
-  .acoes .branco { display: none; }
   .secao-topo { flex-direction: column; }
 }

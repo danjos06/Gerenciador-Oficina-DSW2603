@@ -1,7 +1,7 @@
 <header class="topo">
   <div class="topo-in">
     <a class="marca" href="#" (click)="$event.preventDefault(); rolar('inicio')" aria-label="Oficina do Joe">
-      <img class="logo-oficina" src="Logo-Oficina.jpg.png" alt="" />
+      <img class="logo-oficina" src="/Logo-Oficina.jpg.png" alt="" />
       <span class="sep"></span>
       <span class="nome-oficina">{{ cfg.nome }}</span>
     </a>
@@ -21,7 +21,7 @@
     <div class="hero-texto">
       <span class="chip">OFICINA DE CONFIANÇA EM SÃO PAULO</span>
       <h1>Mecânica confiável para quem valoriza segurança e transparência.</h1>
-      <p>Na Torque você encontra revisão, freios, alinhamento, troca de óleo e manutenção preventiva com equipe especializada, preços claros e comunicação direta.</p>
+      <p>Na Oficina do Joe você encontra revisão, freios, alinhamento, troca de óleo e manutenção preventiva com equipe especializada, preços claros e comunicação direta.</p>
       <ul class="pontos">
         <li>Orçamento transparente antes do serviço</li>
         <li>Equipe técnica qualificada e atendimento humano</li>
@@ -32,14 +32,8 @@
         <button class="btn branco grande" (click)="rolar('servicos')">Conheça nossos serviços</button>
       </div>
     </div>
-    <div class="hero-img" role="img" aria-label="Mecânicos trabalhando em carros na oficina">
-      <svg viewBox="0 0 320 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="320" height="110" fill="#2a3a4c" />
-        <path d="M30 80c6-22 20-30 40-32l30-14c10-4 26-4 38 0l26 14c18 2 30 8 36 22v12H30z" fill="#4c7ea5" />
-        <circle cx="80" cy="88" r="12" fill="#111" /><circle cx="196" cy="88" r="12" fill="#111" />
-        <path d="M222 38 262 16" stroke="#cfd6dd" stroke-width="4" stroke-linecap="round" />
-      </svg>
-      <div class="foto" [style.background-image]="'url(/oficina-imagem.jpg)'"></div>
+    <div class="hero-img">
+      <img class="foto" src="/Logo-Oficina.jpg.png" alt="Logo da Oficina do Joe" />
     </div>
   </section>
 
@@ -91,17 +85,18 @@
       <p>Deixe seus contatos, os dados do veículo e um breve resumo do que precisa. Voltamos em até 1 dia útil.</p>
       <input name="nome" [(ngModel)]="form.nome" required placeholder="Seu nome" aria-label="Seu nome" autocomplete="name" />
       @if (f.submitted && f.controls['nome']?.invalid) { <span class="erro">Informe seu nome.</span> }
-      <input name="telefone" [(ngModel)]="form.telefone" required minlength="10" placeholder="Seu telefone" aria-label="Seu telefone" inputmode="tel" autocomplete="tel" />
+      <input name="telefone" [(ngModel)]="form.telefone" (input)="aoDigitarTelefone($event)" required minlength="10" maxlength="11" placeholder="Seu telefone" aria-label="Seu telefone" inputmode="numeric" autocomplete="tel" />
       @if (f.submitted && f.controls['telefone']?.invalid) { <span class="erro">Informe um telefone com DDD.</span> }
-      <input name="cep" [(ngModel)]="form.cep" required minlength="8" placeholder="CEP" aria-label="CEP" inputmode="numeric" autocomplete="postal-code" />
+      <input name="cep" [(ngModel)]="form.cep" (input)="aoDigitarCep()" required minlength="8" maxlength="9" placeholder="CEP" aria-label="CEP" inputmode="numeric" autocomplete="postal-code" />
       @if (f.submitted && f.controls['cep']?.invalid) { <span class="erro">Informe seu CEP.</span> }
+      @if (erroCep()) { <span class="erro">{{ erroCep() }}</span> }
       <input name="placa" [(ngModel)]="form.placa" required minlength="7" placeholder="Placa do carro" aria-label="Placa do carro" autocomplete="off" />
       @if (f.submitted && f.controls['placa']?.invalid) { <span class="erro">Informe a placa do carro.</span> }
       <input name="veiculo" [(ngModel)]="form.veiculo" required placeholder="Modelo do carro" aria-label="Modelo do carro" />
       @if (f.submitted && f.controls['veiculo']?.invalid) { <span class="erro">Informe o modelo do carro.</span> }
       <textarea name="servico" [(ngModel)]="form.servico" required placeholder="Qual serviço você precisa?" aria-label="Qual serviço você precisa?"></textarea>
       @if (f.submitted && f.controls['servico']?.invalid) { <span class="erro">Conte rapidamente o que você precisa.</span> }
-      <button class="btn primary enviar" type="submit">Enviar solicitação</button>
+      <button class="btn primary enviar" type="submit" [disabled]="enviando()">{{ enviando() ? 'Enviando...' : 'Enviar solicitação' }}</button>
       @if (enviado()) { <p class="ok">Recebemos seu pedido. Entraremos em contato em até 1 dia útil.</p> }
       <small>Ao enviar, você concorda em receber contato da {{ cfg.nome }} para o atendimento do seu veículo.</small>
     </form>
@@ -110,5 +105,5 @@
 
 <footer class="rodape">
   <span>{{ cfg.nome }} · {{ cfg.endereco.replace(' · ', ', ') }} · {{ cfg.telefone }}</span>
-  <button class="adm" type="button" routerLink="/painel">Área Administrativa</button>
+  <button class="adm" type="button" routerLink="/login">Área Administrativa</button>
 </footer>

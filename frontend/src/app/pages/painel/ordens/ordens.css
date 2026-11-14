@@ -17,6 +17,8 @@
 .status { border: 0; border-radius: 6px; padding: 3px 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
 .lixo { border: 0; background: none; color: #a8231b; padding: 6px; border-radius: 6px; }
 .lixo:hover { background: #fdecea; }
+.valor-edicao { width: 120px; min-width: 0; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; }
+.acoes-valor { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; }
 .vazio { text-align: center; color: var(--muted); padding: 32px; }
 .soma { display: flex; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--line); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

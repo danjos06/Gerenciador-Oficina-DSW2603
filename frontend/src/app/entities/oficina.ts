@@ -26,6 +26,7 @@ export interface MesFinanceiro {
 
 export interface Solicitacao {
   id: number;
+  email?: string;
   nome: string;
   telefone: string;
   servico: string;
