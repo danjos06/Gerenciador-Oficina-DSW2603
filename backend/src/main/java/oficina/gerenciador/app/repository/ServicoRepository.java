@@ -11,4 +11,6 @@ public interface ServicoRepository extends JpaRepository<ServicoEntity, Integer>
     Optional<ServicoEntity> findByNomeIgnoreCase(String nome);
 
     List<ServicoEntity> findByNomeContainingIgnoreCase(String nome);
+
+    List<ServicoEntity> findByAtivoTrue();
 }

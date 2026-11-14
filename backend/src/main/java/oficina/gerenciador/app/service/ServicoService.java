@@ -20,7 +20,7 @@ public class ServicoService {
 
     @Transactional(readOnly = true)
     public List<ServicoEntity> listarTodos() {
-        return repository.findAll();
+        return repository.findByAtivoTrue();
     }
 
     @Transactional(readOnly = true)
