@@ -20,7 +20,7 @@ public class PecaService {
 
     @Transactional(readOnly = true)
     public List<PecaEntity> listarTodos() {
-        return repository.findAll();
+        return repository.findByAtivoTrue();
     }
 
     @Transactional(readOnly = true)

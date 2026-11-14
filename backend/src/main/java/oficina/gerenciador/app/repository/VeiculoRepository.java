@@ -10,4 +10,6 @@ public interface VeiculoRepository extends JpaRepository<VeiculoEntity, Integer>
     Optional<VeiculoEntity> findByPlaca(String placa);
 
     List<VeiculoEntity> findByClienteId(Integer clienteId);
+
+    List<VeiculoEntity> findByAtivoTrue();
 }

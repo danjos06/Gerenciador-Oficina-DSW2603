@@ -12,4 +12,6 @@ public interface ClienteRepository extends JpaRepository<ClienteEntity, Integer>
     Optional<ClienteEntity> findByCpfCnpj(String cpfCnpj);
 
     List<ClienteEntity> findByNomeContainingIgnoreCase(String nome);
+
+    List<ClienteEntity> findByAtivoTrue();
 }

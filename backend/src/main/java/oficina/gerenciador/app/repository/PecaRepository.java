@@ -11,4 +11,6 @@ public interface PecaRepository extends JpaRepository<PecaEntity, Integer> {
     Optional<PecaEntity> findByCodigo(String codigo);
 
     List<PecaEntity> findByNomeContainingIgnoreCase(String nome);
+
+    List<PecaEntity> findByAtivoTrue();
 }

@@ -21,6 +21,7 @@ import oficina.gerenciador.app.model.entity.HistoricoStatusOrdemEntity;
 import oficina.gerenciador.app.model.entity.OrdemItemServicoEntity;
 import oficina.gerenciador.app.model.entity.OrdemPecaEntity;
 import oficina.gerenciador.app.model.entity.OrdemServicoEntity;
+import oficina.gerenciador.app.model.response.OrdemServicoResumoResponse;
 import oficina.gerenciador.app.service.OrdemServicoService;
 import oficina.gerenciador.app.util.AuthInterceptor;
 
@@ -98,6 +99,11 @@ public class OrdemServicoController {
     public void cancelar(@PathVariable int id, HttpServletRequest request) {
         Integer usuarioLogadoId = (Integer) request.getAttribute(AuthInterceptor.ATRIBUTO_USUARIO_ID);
         service.cancelar(id, usuarioLogadoId);
+    }
+
+    @GetMapping("/{id}/resumo")
+    public OrdemServicoResumoResponse obterResumo(@PathVariable int id) {
+        return service.obterResumo(id);
     }
 
     // =========================================================================

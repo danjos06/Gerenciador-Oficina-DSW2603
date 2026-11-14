@@ -7,20 +7,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import oficina.gerenciador.app.model.entity.ClienteEntity;
 import oficina.gerenciador.app.model.entity.VeiculoEntity;
+import oficina.gerenciador.app.repository.ClienteRepository;
 import oficina.gerenciador.app.repository.VeiculoRepository;
 
 @Service
 public class VeiculoService {
     private final VeiculoRepository repository;
+    private final ClienteRepository clienteRepository;
 
-    public VeiculoService(VeiculoRepository repository) {
+    public VeiculoService(VeiculoRepository repository, ClienteRepository clienteRepository) {
         this.repository = repository;
+        this.clienteRepository = clienteRepository;
     }
 
     @Transactional(readOnly = true)
     public List<VeiculoEntity> listarTodos() {
-        return repository.findAll();
+        return repository.findByAtivoTrue();
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +71,10 @@ public class VeiculoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Placa já cadastrada.");
         }
 
+        ClienteEntity cliente = clienteRepository.findById(veiculo.getCliente().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado para o ID: " + veiculo.getCliente().getId()));
+
+        veiculo.setCliente(cliente);
+
         if (veiculo.getAtivo() == null) {
             veiculo.setAtivo(true);
         }
@@ -103,12 +111,14 @@ public class VeiculoService {
             veiculoExistente.setCor(veiculo.getCor());
         }
 
-        if (veiculo.getCliente() != null && veiculo.getCliente().getId() != null) {
-            veiculoExistente.setCliente(veiculo.getCliente());
-        }
-
         if (veiculo.getAtivo() != null) {
             veiculoExistente.setAtivo(veiculo.getAtivo());
+        }
+
+        if (veiculo.getCliente() != null && veiculo.getCliente().getId() != null) {
+            ClienteEntity cliente = clienteRepository.findById(veiculo.getCliente().getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado para o ID: " + veiculo.getCliente().getId()));
+            veiculoExistente.setCliente(cliente);
         }
 
         return repository.save(veiculoExistente);

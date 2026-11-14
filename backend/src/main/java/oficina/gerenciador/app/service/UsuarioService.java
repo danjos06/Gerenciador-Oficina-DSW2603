@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
@@ -70,9 +70,14 @@ public class UsuarioService {
     }
 
     public List<UsuarioResponse> listarUsuarios(String perfilSolicitante) {
-        return usuarioRepository.findAll().stream()
-                .map(UsuarioResponse::deEntidade)
-                .collect(Collectors.toList());
+        List<UsuarioEntity> usuarios = usuarioRepository.findByAtivoTrue();
+        List<UsuarioResponse> resposta = new ArrayList<>();
+
+        for (UsuarioEntity u : usuarios) {
+            resposta.add(UsuarioResponse.deEntidade(u));
+        }
+
+        return resposta;
     }
 
     public UsuarioResponse buscarUsuarioPorId(Integer id) {

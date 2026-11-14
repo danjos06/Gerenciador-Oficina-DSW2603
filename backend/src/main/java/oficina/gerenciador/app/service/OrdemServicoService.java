@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import oficina.gerenciador.app.model.entity.ClienteEntity;
 import oficina.gerenciador.app.model.entity.HistoricoStatusOrdemEntity;
 import oficina.gerenciador.app.model.entity.OrdemItemServicoEntity;
 import oficina.gerenciador.app.model.entity.OrdemPecaEntity;
@@ -16,8 +17,11 @@ import oficina.gerenciador.app.model.entity.OrdemServicoEntity;
 import oficina.gerenciador.app.model.entity.PecaEntity;
 import oficina.gerenciador.app.model.entity.ServicoEntity;
 import oficina.gerenciador.app.model.entity.UsuarioEntity;
+import oficina.gerenciador.app.model.entity.VeiculoEntity;
 import oficina.gerenciador.app.model.enums.OrigemPeca;
 import oficina.gerenciador.app.model.enums.StatusOrdem;
+import oficina.gerenciador.app.model.response.OrdemServicoResumoResponse;
+import oficina.gerenciador.app.repository.ClienteRepository;
 import oficina.gerenciador.app.repository.HistoricoStatusOrdemRepository;
 import oficina.gerenciador.app.repository.OrdemItemServicoRepository;
 import oficina.gerenciador.app.repository.OrdemPecaRepository;
@@ -25,6 +29,7 @@ import oficina.gerenciador.app.repository.OrdemServicoRepository;
 import oficina.gerenciador.app.repository.PecaRepository;
 import oficina.gerenciador.app.repository.ServicoRepository;
 import oficina.gerenciador.app.repository.UsuarioRepository;
+import oficina.gerenciador.app.repository.VeiculoRepository;
 
 @Service
 public class OrdemServicoService {
@@ -35,6 +40,8 @@ public class OrdemServicoService {
     private final PecaRepository pecaRepository;
     private final ServicoRepository servicoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ClienteRepository clienteRepository;
+    private final VeiculoRepository veiculoRepository;
 
     public OrdemServicoService(
             OrdemServicoRepository repository,
@@ -43,7 +50,9 @@ public class OrdemServicoService {
             HistoricoStatusOrdemRepository historicoRepository,
             PecaRepository pecaRepository,
             ServicoRepository servicoRepository,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            ClienteRepository clienteRepository,
+            VeiculoRepository veiculoRepository
     ) {
         this.repository = repository;
         this.ordemPecaRepository = ordemPecaRepository;
@@ -52,6 +61,8 @@ public class OrdemServicoService {
         this.pecaRepository = pecaRepository;
         this.servicoRepository = servicoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.clienteRepository = clienteRepository;
+        this.veiculoRepository = veiculoRepository;
     }
 
     // =========================================================================
@@ -125,12 +136,28 @@ public class OrdemServicoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O campo 'quilometragem' é obrigatório.");
         }
 
+        ClienteEntity cliente = clienteRepository.findById(ordem.getCliente().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
+
+        VeiculoEntity veiculo = veiculoRepository.findById(ordem.getVeiculo().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veiculo não encontrado."));
+
+        if(!veiculo.getCliente().getId().equals(cliente.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O veículo informado não pertence a este cliente.");
+        }
+
+        ordem.setCliente(cliente);
+        ordem.setVeiculo(veiculo);
+
         if (ordem.getStatus() == null) {
             ordem.setStatus(StatusOrdem.ABERTA);
         }
 
         if (ordem.getDesconto() == null) {
             ordem.setDesconto(BigDecimal.ZERO);
+        }
+
+        if (ordem.getMecanico() != null && ordem.getMecanico().getId() != null) {
+            UsuarioEntity mecanico = usuarioRepository.findById(ordem.getMecanico().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mecânico não encontrado."));
+            ordem.setMecanico(mecanico);
         }
 
         OrdemServicoEntity salva = repository.save(ordem);
@@ -154,15 +181,22 @@ public class OrdemServicoService {
         }
 
         if (ordem.getCliente() != null && ordem.getCliente().getId() != null) {
-            ordemExistente.setCliente(ordem.getCliente());
+            ClienteEntity cliente = clienteRepository.findById(ordem.getCliente().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado."));
+            ordemExistente.setCliente(cliente);
         }
 
         if (ordem.getVeiculo() != null && ordem.getVeiculo().getId() != null) {
-            ordemExistente.setVeiculo(ordem.getVeiculo());
+            VeiculoEntity veiculo = veiculoRepository.findById(ordem.getVeiculo().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Veículo não encontrado."));
+            ordemExistente.setVeiculo(veiculo);
         }
 
-        if (ordem.getMecanico() != null) {
-            ordemExistente.setMecanico(ordem.getMecanico());
+        if (!ordemExistente.getVeiculo().getCliente().getId().equals(ordemExistente.getCliente().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O veículo informado não pertence a este cliente");
+        }
+
+        if (ordem.getMecanico() != null && ordem.getMecanico().getId() != null) {
+            UsuarioEntity mecanico = usuarioRepository.findById(ordem.getMecanico().getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mecânico não encontrado."));
+            ordemExistente.setMecanico(mecanico);
         }
 
         if (ordem.getOrdemOrigem() != null) {
@@ -266,6 +300,48 @@ public class OrdemServicoService {
 
         UsuarioEntity autor = obterUsuarioAutor(usuarioLogadoId, salva.getCriadoPor());
         registrarHistorico(salva, autor, statusAnterior, StatusOrdem.CANCELADA, "Ordem de serviço cancelada");
+    }
+
+    @Transactional(readOnly = true)
+    public OrdemServicoResumoResponse obterResumo(int ordemId) {
+        OrdemServicoEntity ordem = buscarPorId(ordemId);
+        List<OrdemPecaEntity> pecas = ordemPecaRepository.findByOrdemId(ordemId);
+        List<OrdemItemServicoEntity> servicos = ordemItemServicoRepository.findByOrdemId(ordemId);
+        List<HistoricoStatusOrdemEntity> historico = historicoRepository.findByOrdemIdOrderByCriadoEmAsc(ordemId);
+
+        BigDecimal totalPecas = BigDecimal.ZERO;
+
+        for (OrdemPecaEntity p : pecas) {
+            BigDecimal subtotal = p.getPrecoUnitario().multiply(BigDecimal.valueOf(p.getQuantidade()));
+
+            totalPecas = totalPecas.add(subtotal);
+        }
+
+        BigDecimal totalServicos = BigDecimal.ZERO;
+
+        for(OrdemItemServicoEntity s : servicos) {
+            BigDecimal subtotal = s.getPrecoUnitario().multiply(BigDecimal.valueOf(s.getQuantidade()));
+
+            totalServicos = totalServicos.add(subtotal);
+        }
+
+        BigDecimal totalBruto = totalPecas.add(totalServicos);
+
+        BigDecimal desconto = ordem.getDesconto() != null ? ordem.getDesconto() : BigDecimal.ZERO;
+
+        BigDecimal valorTotal = totalBruto.subtract(desconto).max(BigDecimal.ZERO);
+
+        return OrdemServicoResumoResponse.builder()
+            .ordem(ordem)
+            .pecas(pecas)
+            .servicos(servicos)
+            .historico(historico)
+            .totalPecas(totalPecas)
+            .totalServicos(totalServicos)
+            .totalBruto(totalBruto)
+            .desconto(desconto)
+            .valorTotal(valorTotal)
+            .build();
     }
 
     // =========================================================================
@@ -499,6 +575,24 @@ public class OrdemServicoService {
     }
 
     private void aplicarMudancaDeStatus(OrdemServicoEntity ordem, StatusOrdem novoStatus) {
+        if (novoStatus == StatusOrdem.CONCLUIDA || novoStatus == StatusOrdem.ENTREGUE) {
+            List<OrdemPecaEntity> pecas = ordemPecaRepository.findByOrdemId(ordem.getId());
+
+            for (OrdemPecaEntity p : pecas) {
+                if (Boolean.TRUE.equals(p.getPendente())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Não é possível concluir ou entregar a OS pois existem peças pendentes de chegada.");
+                }
+            }
+
+            List<OrdemItemServicoEntity> servicos = ordemItemServicoRepository.findByOrdemId(ordem.getId());
+
+            for (OrdemItemServicoEntity s : servicos) {
+                if (Boolean.TRUE.equals(s.getExtra()) && s.getAprovadoEm() == null) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Não é possível concluir ou entregar a OS pois existem serviços extras aguardando aprovação do cliente.");
+                }
+            }
+        }
+
         ordem.setStatus(novoStatus);
         if (novoStatus == StatusOrdem.CONCLUIDA && ordem.getConcluidoEm() == null) {
             ordem.setConcluidoEm(LocalDateTime.now());
