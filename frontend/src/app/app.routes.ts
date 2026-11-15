@@ -6,6 +6,8 @@ import { VisaoGeral } from './pages/painel/visao-geral/visao-geral';
 import { Ordens } from './pages/painel/ordens/ordens';
 import { Clientes } from './pages/painel/clientes/clientes';
 import { Veiculos } from './pages/painel/veiculos/veiculos';
+import { Pecas } from './pages/painel/pecas/pecas';
+import { Servicos } from './pages/painel/servicos/servicos';
 import { Financeiro } from './pages/painel/financeiro/financeiro';
 import { Configuracoes } from './pages/painel/configuracoes/configuracoes';
 import { Orcamentos } from './pages/painel/orcamentos/orcamentos';
@@ -24,6 +26,8 @@ export const routes: Routes = [
       { path: 'ordens', component: Ordens },
       { path: 'clientes', component: Clientes },
       { path: 'veiculos', component: Veiculos },
+      { path: 'pecas', component: Pecas },
+      { path: 'servicos', component: Servicos },
       { path: 'financeiro', component: Financeiro },
       { path: 'orcamentos', component: Orcamentos },
       { path: 'relatorios', redirectTo: 'orcamentos', pathMatch: 'full' },

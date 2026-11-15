@@ -9,6 +9,7 @@ import { OficinaService } from '../../../services/oficina';
 
 const TITULOS: Record<string, string> = {
   '': 'Visão geral', ordens: 'Ordens de serviço', clientes: 'Clientes', veiculos: 'Veículos',
+  pecas: 'Peças', servicos: 'Serviços',
   financeiro: 'Financeiro', orcamentos: 'Orçamentos', configuracoes: 'Configurações',
 };
 
@@ -31,6 +32,8 @@ export class Layout {
     { caminho: 'ordens', rotulo: 'Ordens de serviço', icone: 'clipboard' },
     { caminho: 'clientes', rotulo: 'Clientes', icone: 'users' },
     { caminho: 'veiculos', rotulo: 'Veículos', icone: 'car' },
+    { caminho: 'pecas', rotulo: 'Peças', icone: 'box' },
+    { caminho: 'servicos', rotulo: 'Serviços', icone: 'wrench' },
     { caminho: 'financeiro', rotulo: 'Financeiro', icone: 'wallet' },
     { caminho: 'orcamentos', rotulo: 'Orçamentos', icone: 'chart' },
   ];

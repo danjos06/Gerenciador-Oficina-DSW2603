@@ -105,10 +105,15 @@
             <tr>
               <td class="forte">#{{ o.numero }}</td>
               <td><div class="forte">{{ o.cliente }}</div><div class="sub">{{ o.veiculo }} · {{ o.placa }}</div></td>
-              <td>{{ o.servico }}</td>
+              <td>
+                <div>{{ o.servico || '—' }}</div>
+                @if (o.pecasTexto) { <div class="sub">Peças: {{ o.pecasTexto }}</div> }
+              </td>
               <td><span class="pilula" [class]="'pilula ' + classeStatus(o.status)">{{ o.status }}</span></td>
               <td class="dir forte">{{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
             </tr>
+          } @empty {
+            <tr><td colspan="5" class="mut" style="text-align:center;padding:20px">Nenhuma ordem de serviço cadastrada.</td></tr>
           }
         </tbody>
       </table>

@@ -75,7 +75,7 @@ export class VisaoGeral {
     const lista = this.s.mesesOrdenados().slice(ini, ini + 6);
     const maiorValor = Math.max(0, ...lista.flatMap((m) => [m.faturamento, m.despesas]));
     const max = Math.max(10000, Math.ceil(maiorValor / 10000) * 10000);
-    const gw = (W - padL - padR) / lista.length;
+    const gw = (W - padL - padR) / Math.max(1, lista.length);
     const y = (v: number) => base - (Math.max(0, v) / max) * (base - topo);
     const barras = lista.map((m, i) => {
       const cx = padL + (i + 0.5) * gw;

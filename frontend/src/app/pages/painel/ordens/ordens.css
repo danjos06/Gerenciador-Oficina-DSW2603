@@ -1,8 +1,25 @@
 .cabeca { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .nova { padding: 20px; margin-bottom: 16px; display: grid; gap: 14px; }
 .nova h2 { font-size: 16px; font-weight: 500; }
-.grade-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.acoes { display: flex; justify-content: flex-end; gap: 10px; }
+.grade-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px; }
+.sugestoes-clientes { display: grid; gap: 8px; padding: 10px 12px; background: #f4f6f8; border-radius: 8px; font-size: 13px; }
+.chips-sugestao { display: flex; flex-wrap: wrap; gap: 8px; }
+.listas-os { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.bloco-itens { border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; background: #fafbfc; align-content: start; }
+.topo-bloco-itens { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.topo-bloco-itens h3 { font-size: 14px; font-weight: 500; margin: 0; }
+.linha-add-item { display: grid; grid-template-columns: 1fr 68px 110px auto; gap: 8px; align-items: center; }
+.linha-add-item input { height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--text); min-width: 0; }
+.itens-adicionados { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.itens-adicionados li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+.itens-adicionados li.vazio-item { justify-content: center; background: transparent; border-style: dashed; }
+.item-dir { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; white-space: nowrap; }
+.btn-rem { border: 0; background: transparent; color: #a5362b; font-size: 12px; cursor: pointer; padding: 2px 4px; }
+.btn-rem:hover { text-decoration: underline; }
+.topo-gerenciar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.acoes { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; }
+.total-previa { margin-right: auto; font-size: 14px; }
+.total-previa strong { color: var(--text); }
 .lista { overflow: hidden; }
 .ferramentas { padding: 14px 16px; display: grid; gap: 12px; }
 .busca { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; height: 38px; color: var(--muted); }
@@ -13,14 +30,14 @@
 .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 .chip.on span { color: #fff; }
 .rolagem { overflow-x: auto; }
-.rolagem .tabela { min-width: 860px; }
+.rolagem .tabela { min-width: 920px; }
+.item-tabela { font-size: 13px; line-height: 1.35; }
 .status { border: 0; border-radius: 6px; padding: 3px 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
 .lixo { border: 0; background: none; color: #a8231b; padding: 6px; border-radius: 6px; }
 .lixo:hover { background: #fdecea; }
-.valor-edicao { width: 120px; min-width: 0; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; }
 .acoes-valor { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; }
 .vazio { text-align: center; color: var(--muted); padding: 32px; }
 .soma { display: flex; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--line); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-@media (max-width: 1000px) { .grade-form { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .grade-form { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .listas-os { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .linha-add-item { grid-template-columns: 1fr 1fr; } }

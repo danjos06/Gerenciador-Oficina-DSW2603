@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AuthService, Perfil } from '../../../services/auth';
+import { AuthService, ContaGerenciada, Perfil } from '../../../services/auth';
 
 @Component({
   selector: 'app-configuracoes',
@@ -10,12 +10,30 @@ import { AuthService, Perfil } from '../../../services/auth';
     <div class="cabeca">
       <div>
         <h1 class="pagina-titulo">Usuários e acessos</h1>
-        <p class="pagina-sub">Cadastre contas e gerencie os perfis de acesso.</p>
+        <p class="pagina-sub">Personalize sua conta de administrador, cadastre funcionários e gerencie os perfis de acesso.</p>
       </div>
     </div>
 
+    <form class="card editor" (ngSubmit)="salvarAdmin()">
+      <h2>Personalizar conta de administrador</h2>
+      <div class="campos">
+        <label class="campo">Nome do administrador
+          <input name="adminNome" [(ngModel)]="formAdmin.nome" placeholder="Seu nome" required />
+        </label>
+        <label class="campo">E-mail de acesso
+          <input name="adminEmail" type="email" [(ngModel)]="formAdmin.email" placeholder="admin@oficina.com" required />
+        </label>
+        <label class="campo">Nova senha (opcional)
+          <input name="adminSenha" type="password" [(ngModel)]="formAdmin.senha" placeholder="Deixe em branco para manter a atual" />
+        </label>
+      </div>
+      <div class="acoes">
+        <button class="btn primary" type="submit">Salvar dados do administrador</button>
+      </div>
+    </form>
+
     <form class="card editor" (ngSubmit)="criar()">
-      <h2>Cadastrar conta</h2>
+      <h2>Cadastrar nova conta</h2>
       <div class="campos">
         <label class="campo">Nome<input name="nome" [(ngModel)]="form.nome" placeholder="Nome" required /></label>
         <label class="campo">E-mail<input name="email" type="email" [(ngModel)]="form.email" placeholder="E-mail" required /></label>
@@ -48,7 +66,7 @@ import { AuthService, Perfil } from '../../../services/auth';
                   @if (c.fixo || c.email === meuEmail) {
                     {{ nomePerfil(c.perfil) }}
                   } @else {
-                    <select [ngModel]="c.perfil" [name]="'perfil-' + c.email" (ngModelChange)="mudarPerfil(c.email, $event)">
+                    <select [ngModel]="c.perfil" [name]="'perfil-' + c.email" (ngModelChange)="mudarPerfil(c, $event)">
                       <option value="funcionario">Funcionário</option>
                       <option value="admin">Administrador</option>
                     </select>
@@ -56,7 +74,7 @@ import { AuthService, Perfil } from '../../../services/auth';
                 </td>
                 <td>
                   @if (!c.fixo && c.email !== meuEmail) {
-                    <button class="btn sm excluir" type="button" (click)="remover(c.email)">Remover</button>
+                    <button class="btn sm excluir" type="button" (click)="remover(c)">Remover</button>
                   } @else if (c.email === meuEmail) {
                     <span class="mut">Conta atual</span>
                   }
@@ -72,7 +90,7 @@ import { AuthService, Perfil } from '../../../services/auth';
   `,
   styles: `
     .cabeca{margin-bottom:18px}
-    .editor{padding:18px 20px;display:grid;gap:14px}
+    .editor{padding:18px 20px;display:grid;gap:14px;margin-bottom:18px}
     .editor h2{font-size:16px;font-weight:500}
     .campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
     .acoes{display:flex;gap:8px;flex-wrap:wrap}
@@ -90,13 +108,25 @@ import { AuthService, Perfil } from '../../../services/auth';
 export class Configuracoes {
   private auth = inject(AuthService);
   meuEmail = this.auth.sessao()?.email.trim().toLowerCase() ?? '';
+  formAdmin = {
+    nome: this.auth.sessao()?.nome ?? '',
+    email: this.auth.sessao()?.email ?? '',
+    senha: '',
+  };
   form = { nome: '', email: '', senha: '', perfil: 'funcionario' as Perfil };
-  contas = signal(this.auth.listarContas());
+  contas = signal<ContaGerenciada[]>(this.auth.listarContas());
   erro = signal('');
   ok = signal('');
 
-  private atualizar(): void {
-    this.contas.set(this.auth.listarContas());
+  constructor() {
+    void this.atualizar();
+  }
+
+  private async atualizar(): Promise<void> {
+    this.contas.set(await this.auth.carregarContas());
+    this.meuEmail = this.auth.sessao()?.email.trim().toLowerCase() ?? '';
+    this.formAdmin.nome = this.auth.sessao()?.nome ?? '';
+    this.formAdmin.email = this.auth.sessao()?.email ?? '';
   }
 
   nomePerfil(perfil: Perfil): string {
@@ -105,10 +135,28 @@ export class Configuracoes {
     return 'Funcionário';
   }
 
-  criar(): void {
+  async salvarAdmin(): Promise<void> {
     this.erro.set('');
     this.ok.set('');
-    const resultado = this.auth.criarConta(this.form.nome, this.form.email, this.form.senha, this.form.perfil);
+    const resultado = await this.auth.atualizarContaAdminApi(
+      this.formAdmin.nome,
+      this.formAdmin.email,
+      this.formAdmin.senha,
+    );
+    if (!resultado.ok) {
+      this.erro.set(resultado.erro ?? 'Erro ao atualizar administrador.');
+      return;
+    }
+
+    this.formAdmin.senha = '';
+    this.ok.set('Dados do administrador atualizados com sucesso.');
+    await this.atualizar();
+  }
+
+  async criar(): Promise<void> {
+    this.erro.set('');
+    this.ok.set('');
+    const resultado = await this.auth.criarContaApi(this.form.nome, this.form.email, this.form.senha, this.form.perfil);
     if (!resultado.ok) {
       this.erro.set(resultado.erro ?? 'Erro ao cadastrar.');
       return;
@@ -116,25 +164,25 @@ export class Configuracoes {
 
     this.ok.set('Conta cadastrada.');
     this.form = { nome: '', email: '', senha: '', perfil: 'funcionario' };
-    this.atualizar();
+    await this.atualizar();
   }
 
-  mudarPerfil(email: string, perfil: Perfil): void {
+  async mudarPerfil(conta: ContaGerenciada, perfil: Perfil): Promise<void> {
     this.erro.set('');
     this.ok.set('');
-    const resultado = this.auth.alterarPerfil(email, perfil);
+    const resultado = await this.auth.alterarPerfilApi(conta.email, perfil, conta.id);
     if (!resultado.ok) this.erro.set(resultado.erro ?? 'Erro ao alterar.');
     else this.ok.set('Perfil atualizado.');
-    this.atualizar();
+    await this.atualizar();
   }
 
-  remover(email: string): void {
+  async remover(conta: ContaGerenciada): Promise<void> {
     if (typeof confirm === 'undefined' || !confirm('Remover esta conta?')) return;
     this.erro.set('');
     this.ok.set('');
-    const resultado = this.auth.removerConta(email);
+    const resultado = await this.auth.removerContaApi(conta.email, conta.id);
     if (!resultado.ok) this.erro.set(resultado.erro ?? 'Erro ao remover.');
     else this.ok.set('Conta removida.');
-    this.atualizar();
+    await this.atualizar();
   }
 }

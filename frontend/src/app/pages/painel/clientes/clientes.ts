@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ClienteResumo } from '../../../entities/oficina';
 import { AuthService } from '../../../services/auth';
 import { OficinaService } from '../../../services/oficina';
+import { cepTemFormatoValido, consultarCep, mascararCep, montarEnderecoCompleto, resumirEnderecoCep } from '../../../shared/contato';
 
 @Component({
   selector: 'app-clientes',
@@ -23,10 +24,14 @@ import { OficinaService } from '../../../services/oficina';
         <div class="campos">
           <label>Nome<input name="nome" [(ngModel)]="form.nome" required /></label>
           <label>Telefone<input name="telefone" [(ngModel)]="form.telefone" required inputmode="tel" /></label>
-          <label>CEP<input name="cep" [(ngModel)]="form.cep" inputmode="numeric" /></label>
+          <label>CEP<input name="cep" [(ngModel)]="form.cep" (input)="aoDigitarCep()" maxlength="9" placeholder="00000-000" inputmode="numeric" /></label>
+          <label>Número<input name="numero" [(ngModel)]="form.numero" placeholder="Ex.: 123" /></label>
+          <label>Endereço (ViaCEP)<input name="enderecoBase" [(ngModel)]="form.enderecoBase" placeholder="Rua, bairro - cidade/UF" /></label>
           <label>Modelo do carro<input name="modelo" [(ngModel)]="form.modelo" /></label>
           <label>Placa<input name="placa" [(ngModel)]="form.placa" /></label>
         </div>
+        @if (buscandoCep()) { <small class="mut">Consultando CEP no ViaCEP...</small> }
+        @if (erroCep()) { <span class="erro">{{ erroCep() }}</span> }
         @if (f.submitted && f.invalid) { <span class="erro">Informe o nome e o telefone do cliente.</span> }
         <div class="acoes">
           <button class="btn primary" type="submit">Salvar cliente</button>
@@ -42,7 +47,7 @@ import { OficinaService } from '../../../services/oficina';
           <div>
             <strong>{{ x.nome }}</strong> · {{ x.telefone }}
             @if (x.email) { <span class="mut"> · {{ x.email }}</span> }
-            <p class="mut">{{ x.veiculo }} · {{ x.placa }} · CEP {{ x.cep }}</p>
+            <p class="mut">{{ x.veiculo }} · {{ x.placa }} · {{ x.endereco || ('CEP ' + x.cep) }}</p>
             <p class="mut">{{ x.servico }} <small>({{ x.criadaEm | date: 'dd/MM HH:mm' }})</small></p>
           </div>
           @if (podeEditar) {
@@ -60,13 +65,13 @@ import { OficinaService } from '../../../services/oficina';
     <section class="card lista">
       <div class="rolagem">
         <table class="tabela">
-          <thead><tr><th>Cliente</th><th>Contato</th><th>CEP</th><th>Veículos</th><th class="dir">OS</th><th class="dir">Total</th>@if (podeEditar) { <th>Ações</th> }</tr></thead>
+          <thead><tr><th>Cliente</th><th>Contato</th><th>Endereço / CEP</th><th>Veículos</th><th class="dir">OS</th><th class="dir">Total</th>@if (podeEditar) { <th>Ações</th> }</tr></thead>
           <tbody>
             @for (c of s.clientes(); track c.id) {
               <tr>
                 <td class="forte">{{ c.nome }}</td>
                 <td>{{ c.telefone }}</td>
-                <td>{{ c.cep || '—' }}</td>
+                <td>{{ c.endereco || c.cep || '—' }}</td>
                 <td>@for (v of c.veiculos; track v.placa) { <div class="sub">{{ v.modelo }} · {{ v.placa }}</div> }</td>
                 <td class="dir">{{ c.os }}</td>
                 <td class="dir forte">{{ c.total | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
@@ -109,24 +114,55 @@ export class Clientes {
   podeEditar = inject(AuthService).perfil() === 'admin';
   formAberto = false;
   clienteEditando: number | null = null;
+  buscandoCep = signal(false);
+  erroCep = signal('');
   form = this.vazio();
 
   private vazio() {
-    return { nome: '', telefone: '', cep: '', modelo: '', placa: '' };
+    return { nome: '', telefone: '', cep: '', numero: '', enderecoBase: '', modelo: '', placa: '' };
+  }
+
+  async aoDigitarCep(): Promise<void> {
+    this.form.cep = mascararCep(this.form.cep);
+    this.erroCep.set('');
+
+    if (!cepTemFormatoValido(this.form.cep)) return;
+
+    const cepBuscado = this.form.cep;
+    this.buscandoCep.set(true);
+    try {
+      const info = await consultarCep(cepBuscado);
+      if (this.form.cep !== cepBuscado) return;
+      if (!info) {
+        this.erroCep.set('CEP não encontrado no ViaCEP.');
+        return;
+      }
+      this.form.enderecoBase = resumirEnderecoCep(info);
+    } catch {
+      // Ignora falha de rede ao consultar CEP
+    } finally {
+      if (this.form.cep === cepBuscado) {
+        this.buscandoCep.set(false);
+      }
+    }
   }
 
   abrirNovo(): void {
     this.form = this.vazio();
+    this.erroCep.set('');
     this.clienteEditando = null;
     this.formAberto = true;
   }
 
   editar(cliente: ClienteResumo): void {
     const principal = cliente.veiculos[0];
+    this.erroCep.set('');
     this.form = {
       nome: cliente.nome,
       telefone: cliente.telefone,
       cep: cliente.cep,
+      numero: cliente.numero ?? '',
+      enderecoBase: cliente.endereco ?? '',
       modelo: principal?.modelo ?? '',
       placa: principal?.placa ?? '',
     };
@@ -134,12 +170,45 @@ export class Clientes {
     this.formAberto = true;
   }
 
-  salvar(f: NgForm): void {
+  async salvar(f: NgForm): Promise<void> {
     if (f.invalid) {
       f.control.markAllAsTouched();
       return;
     }
-    this.s.salvarCadastroCliente(this.form, this.clienteEditando ?? undefined);
+
+    if (this.form.cep && !cepTemFormatoValido(this.form.cep)) {
+      this.erroCep.set('CEP inválido. Use 8 números.');
+      return;
+    }
+
+    let baseEndereco = this.form.enderecoBase.trim();
+    if (this.form.cep && !baseEndereco) {
+      try {
+        const info = await consultarCep(this.form.cep);
+        if (!info) {
+          this.erroCep.set('CEP não encontrado no ViaCEP.');
+          return;
+        }
+        baseEndereco = resumirEnderecoCep(info);
+      } catch {
+        // Fallback caso ViaCEP esteja inacessível
+      }
+    }
+
+    const enderecoCompleto = montarEnderecoCompleto(baseEndereco, this.form.numero, this.form.cep);
+
+    this.s.salvarCadastroCliente(
+      {
+        nome: this.form.nome,
+        telefone: this.form.telefone,
+        cep: this.form.cep,
+        numero: this.form.numero,
+        endereco: enderecoCompleto,
+        modelo: this.form.modelo,
+        placa: this.form.placa,
+      },
+      this.clienteEditando ?? undefined,
+    );
     this.cancelar();
   }
 
@@ -150,6 +219,7 @@ export class Clientes {
   cancelar(): void {
     this.formAberto = false;
     this.clienteEditando = null;
+    this.erroCep.set('');
     this.form = this.vazio();
   }
 }

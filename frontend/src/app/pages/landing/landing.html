@@ -87,9 +87,15 @@
       @if (f.submitted && f.controls['nome']?.invalid) { <span class="erro">Informe seu nome.</span> }
       <input name="telefone" [(ngModel)]="form.telefone" (input)="aoDigitarTelefone($event)" required minlength="10" maxlength="11" placeholder="Seu telefone" aria-label="Seu telefone" inputmode="numeric" autocomplete="tel" />
       @if (f.submitted && f.controls['telefone']?.invalid) { <span class="erro">Informe um telefone com DDD.</span> }
-      <input name="cep" [(ngModel)]="form.cep" (input)="aoDigitarCep()" required minlength="8" maxlength="9" placeholder="CEP" aria-label="CEP" inputmode="numeric" autocomplete="postal-code" />
+      <input name="cep" [(ngModel)]="form.cep" (input)="aoDigitarCep()" required minlength="8" maxlength="9" placeholder="CEP (ex.: 04567-000)" aria-label="CEP" inputmode="numeric" autocomplete="postal-code" />
       @if (f.submitted && f.controls['cep']?.invalid) { <span class="erro">Informe seu CEP.</span> }
+      @if (buscandoCep()) { <small class="mut">Consultando CEP no ViaCEP...</small> }
       @if (erroCep()) { <span class="erro">{{ erroCep() }}</span> }
+      @if (form.enderecoBase) {
+        <input name="enderecoBase" [ngModel]="form.enderecoBase" readonly aria-label="Endereço encontrado pelo CEP" />
+      }
+      <input name="numero" [(ngModel)]="form.numero" required placeholder="Número do endereço (ex.: 1128)" aria-label="Número do endereço" />
+      @if (f.submitted && f.controls['numero']?.invalid) { <span class="erro">Informe o número do endereço.</span> }
       <input name="placa" [(ngModel)]="form.placa" required minlength="7" placeholder="Placa do carro" aria-label="Placa do carro" autocomplete="off" />
       @if (f.submitted && f.controls['placa']?.invalid) { <span class="erro">Informe a placa do carro.</span> }
       <input name="veiculo" [(ngModel)]="form.veiculo" required placeholder="Modelo do carro" aria-label="Modelo do carro" />

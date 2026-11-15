@@ -1,7 +1,7 @@
 <div class="cabeca">
   <div>
     <h1 class="pagina-titulo">Ordens de serviço</h1>
-    <p class="pagina-sub">Cadastre, acompanhe e atualize o andamento de cada veículo.</p>
+    <p class="pagina-sub">Cadastre, acompanhe e atualize o andamento, as peças e os serviços de cada veículo.</p>
   </div>
   @if (podeEditar) {
     <button class="btn primary" (click)="formAberto.set(!formAberto())" [attr.aria-expanded]="formAberto()">
@@ -10,29 +10,34 @@
   }
 </div>
 
+<datalist id="lista-servicos-os">
+  @for (sv of s.catalogoServicos(); track sv.id) { <option [value]="sv.descricao"></option> }
+</datalist>
+<datalist id="lista-pecas-os">
+  @for (p of s.catalogoPecas(); track p.id) { <option [value]="p.nome"></option> }
+</datalist>
+<datalist id="lista-clientes-os">
+  @for (c of s.clientes(); track c.id) { <option [value]="c.nome"></option> }
+</datalist>
+<datalist id="lista-placas-os">
+  @for (v of s.veiculos(); track v.placa) { <option [value]="v.placa">{{ v.veiculo }} — {{ v.cliente }}</option> }
+</datalist>
+
 @if (podeEditar && formAberto()) {
   <form class="card nova" #f="ngForm" (ngSubmit)="salvar(f)" novalidate>
     <h2>Nova ordem de serviço</h2>
     <div class="grade-form">
-      <label class="campo">Cliente
-        <input name="cliente" [(ngModel)]="novo.cliente" required placeholder="Nome do cliente" />
+      <label class="campo">Cliente (busca por nome)
+        <input name="cliente" [(ngModel)]="novo.cliente" (input)="aoDigitarCliente()" list="lista-clientes-os" required placeholder="Digite o nome do cliente" autocomplete="off" />
         @if (f.submitted && f.controls['cliente']?.invalid) { <span class="erro">Informe o cliente.</span> }
+      </label>
+      <label class="campo">Placa (busca por placa)
+        <input name="placa" [(ngModel)]="novo.placa" (input)="aoDigitarPlaca()" list="lista-placas-os" required maxlength="8" placeholder="ABC-1D23" autocomplete="off" />
+        @if (f.submitted && f.controls['placa']?.invalid) { <span class="erro">Informe a placa.</span> }
       </label>
       <label class="campo">Veículo
         <input name="veiculo" [(ngModel)]="novo.veiculo" required placeholder="Ex.: Honda Civic" />
         @if (f.submitted && f.controls['veiculo']?.invalid) { <span class="erro">Informe o veículo.</span> }
-      </label>
-      <label class="campo">Placa
-        <input name="placa" [(ngModel)]="novo.placa" required maxlength="8" placeholder="ABC-1D23" />
-        @if (f.submitted && f.controls['placa']?.invalid) { <span class="erro">Informe a placa.</span> }
-      </label>
-      <label class="campo">Serviço
-        <input name="servico" [(ngModel)]="novo.servico" required placeholder="Ex.: Revisão e freios" />
-        @if (f.submitted && f.controls['servico']?.invalid) { <span class="erro">Informe o serviço.</span> }
-      </label>
-      <label class="campo">Valor (R$)
-        <input name="valor" type="number" min="0" step="0.01" [(ngModel)]="novo.valor" required />
-        @if (f.submitted && f.controls['valor']?.invalid) { <span class="erro">Informe o valor.</span> }
       </label>
       <label class="campo">Status inicial
         <select name="status" [(ngModel)]="novo.status">
@@ -43,14 +48,153 @@
         <input name="entrega" type="datetime-local" [(ngModel)]="novo.entrega" />
       </label>
     </div>
-    <div class="acoes"><button class="btn" type="button" (click)="formAberto.set(false)">Cancelar</button><button class="btn primary" type="submit">Criar OS</button></div>
+
+    @if (sugestoesBusca().length > 0) {
+      <div class="sugestoes-clientes">
+        <span class="mut">Clientes / veículos encontrados (clique para preencher):</span>
+        <div class="chips-sugestao">
+          @for (item of sugestoesBusca(); track item.cliente + item.placa) {
+            <button type="button" class="btn sm" (click)="selecionarSugestao(item)">
+              <strong>{{ item.cliente }}</strong>
+              @if (item.placa) { · {{ item.veiculo }} ({{ item.placa }}) }
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="listas-os">
+      <div class="bloco-itens">
+        <div class="topo-bloco-itens">
+          <h3>Lista de serviços (mão de obra)</h3>
+          <strong>{{ totalServicosForm() | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong>
+        </div>
+        <div class="linha-add-item">
+          <input name="rascunhoServicoDesc" [(ngModel)]="rascunhoServico.descricao" (input)="aoDigitarRascunhoServico(rascunhoServico)" list="lista-servicos-os" placeholder="Buscar ou digitar serviço..." />
+          <input class="qtd-input" name="rascunhoServicoQtd" type="number" min="1" step="1" [(ngModel)]="rascunhoServico.quantidade" title="Quantidade" placeholder="Qtd" />
+          <input class="preco-input" name="rascunhoServicoPreco" type="number" min="0" step="0.01" [(ngModel)]="rascunhoServico.precoUnitario" placeholder="Valor (R$)" />
+          <button class="btn sm" type="button" (click)="adicionarServicoForm()">Adicionar</button>
+        </div>
+        <ul class="itens-adicionados">
+          @for (sv of itensServicoForm(); track $index) {
+            <li>
+              <span><strong>{{ sv.quantidade }}x</strong> {{ sv.descricao }}</span>
+              <span class="item-dir">
+                {{ (sv.quantidade * sv.precoUnitario) | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                <button type="button" class="btn-rem" (click)="removerServicoForm($index)">Remover</button>
+              </span>
+            </li>
+          } @empty {
+            <li class="mut vazio-item">Nenhum serviço adicionado na lista.</li>
+          }
+        </ul>
+      </div>
+
+      <div class="bloco-itens">
+        <div class="topo-bloco-itens">
+          <h3>Lista de peças</h3>
+          <strong>{{ totalPecasForm() | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong>
+        </div>
+        <div class="linha-add-item">
+          <input name="rascunhoPecaNome" [(ngModel)]="rascunhoPeca.nome" (input)="aoDigitarRascunhoPeca(rascunhoPeca)" list="lista-pecas-os" placeholder="Buscar ou digitar peça..." />
+          <input class="qtd-input" name="rascunhoPecaQtd" type="number" min="1" step="1" [(ngModel)]="rascunhoPeca.quantidade" title="Quantidade" placeholder="Qtd" />
+          <input class="preco-input" name="rascunhoPecaPreco" type="number" min="0" step="0.01" [(ngModel)]="rascunhoPeca.precoUnitario" placeholder="Valor un. (R$)" />
+          <button class="btn sm" type="button" (click)="adicionarPecaForm()">Adicionar</button>
+        </div>
+        <ul class="itens-adicionados">
+          @for (p of itensPecaForm(); track $index) {
+            <li>
+              <span><strong>{{ p.quantidade }}x</strong> {{ p.nome }}</span>
+              <span class="item-dir">
+                {{ (p.quantidade * p.precoUnitario) | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                <button type="button" class="btn-rem" (click)="removerPecaForm($index)">Remover</button>
+              </span>
+            </li>
+          } @empty {
+            <li class="mut vazio-item">Nenhuma peça adicionada na lista.</li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="acoes">
+      <span class="mut total-previa">Total da OS: <strong>{{ (totalServicosForm() + totalPecasForm()) | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong></span>
+      <button class="btn" type="button" (click)="formAberto.set(false)">Cancelar</button>
+      <button class="btn primary" type="submit">Criar OS</button>
+    </div>
   </form>
+}
+
+@if (podeEditar && ordemSelecionada(); as osSel) {
+  <section class="card nova">
+    <div class="topo-gerenciar">
+      <div>
+        <h2>Peças e serviços da OS #{{ osSel.numero }} — {{ osSel.cliente }} ({{ osSel.veiculo }} · {{ osSel.placa }})</h2>
+        <p class="pagina-sub">Adicione ou remova itens das listas de serviços e peças desta ordem de serviço.</p>
+      </div>
+      <button class="btn sm" type="button" (click)="ordemGerenciando.set(null)">Fechar</button>
+    </div>
+
+    <div class="listas-os">
+      <div class="bloco-itens">
+        <div class="topo-bloco-itens">
+          <h3>Serviços da OS #{{ osSel.numero }}</h3>
+          <strong>{{ (osSel.valorServico ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong>
+        </div>
+        <div class="linha-add-item">
+          <input name="edicaoServicoDesc" [(ngModel)]="edicaoServico.descricao" (input)="aoDigitarRascunhoServico(edicaoServico)" list="lista-servicos-os" placeholder="Buscar ou digitar serviço..." />
+          <input class="qtd-input" name="edicaoServicoQtd" type="number" min="1" step="1" [(ngModel)]="edicaoServico.quantidade" placeholder="Qtd" />
+          <input class="preco-input" name="edicaoServicoPreco" type="number" min="0" step="0.01" [(ngModel)]="edicaoServico.precoUnitario" placeholder="Valor (R$)" />
+          <button class="btn sm primary" type="button" (click)="adicionarServicoOrdem(osSel.numero)">Adicionar</button>
+        </div>
+        <ul class="itens-adicionados">
+          @for (sv of (osSel.itensServico ?? []); track $index) {
+            <li>
+              <span><strong>{{ sv.quantidade }}x</strong> {{ sv.descricao }}</span>
+              <span class="item-dir">
+                {{ (sv.quantidade * sv.precoUnitario) | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                <button type="button" class="btn-rem" (click)="removerServicoOrdem(osSel.numero, $index, sv.id)">Remover</button>
+              </span>
+            </li>
+          } @empty {
+            <li class="mut vazio-item">Nenhum serviço vinculado nesta OS.</li>
+          }
+        </ul>
+      </div>
+
+      <div class="bloco-itens">
+        <div class="topo-bloco-itens">
+          <h3>Peças da OS #{{ osSel.numero }}</h3>
+          <strong>{{ (osSel.valorPecas ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong>
+        </div>
+        <div class="linha-add-item">
+          <input name="edicaoPecaNome" [(ngModel)]="edicaoPeca.nome" (input)="aoDigitarRascunhoPeca(edicaoPeca)" list="lista-pecas-os" placeholder="Buscar ou digitar peça..." />
+          <input class="qtd-input" name="edicaoPecaQtd" type="number" min="1" step="1" [(ngModel)]="edicaoPeca.quantidade" placeholder="Qtd" />
+          <input class="preco-input" name="edicaoPecaPreco" type="number" min="0" step="0.01" [(ngModel)]="edicaoPeca.precoUnitario" placeholder="Valor un. (R$)" />
+          <button class="btn sm primary" type="button" (click)="adicionarPecaOrdem(osSel.numero)">Adicionar</button>
+        </div>
+        <ul class="itens-adicionados">
+          @for (p of (osSel.itensPeca ?? []); track $index) {
+            <li>
+              <span><strong>{{ p.quantidade }}x</strong> {{ p.nome }}</span>
+              <span class="item-dir">
+                {{ (p.quantidade * p.precoUnitario) | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                <button type="button" class="btn-rem" (click)="removerPecaOrdem(osSel.numero, $index, p.id)">Remover</button>
+              </span>
+            </li>
+          } @empty {
+            <li class="mut vazio-item">Nenhuma peça vinculada nesta OS.</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </section>
 }
 
 <section class="card lista">
   <div class="ferramentas">
     <label class="busca"><app-icon name="search" [size]="15" />
-      <input type="search" placeholder="Buscar por cliente, placa, serviço ou nº da OS" [ngModel]="busca()" (ngModelChange)="busca.set($event)" aria-label="Buscar ordens de serviço" />
+      <input type="search" placeholder="Buscar por cliente, placa, serviço, peça ou nº da OS" [ngModel]="busca()" (ngModelChange)="busca.set($event)" aria-label="Buscar ordens de serviço" />
     </label>
     <div class="filtros" role="group" aria-label="Filtrar por status">
       @for (st of ['Todas'].concat(statusLista); track st) {
@@ -61,13 +205,43 @@
 
   <div class="rolagem">
     <table class="tabela">
-      <thead><tr><th>OS</th><th>Cliente / veículo</th><th>Serviço</th><th>Entrega</th><th>Status</th><th class="dir">Valor</th><th class="dir"><span class="sr">Ações</span></th></tr></thead>
+      <thead>
+        <tr>
+          <th>OS</th>
+          <th>Cliente / veículo</th>
+          <th>Lista de serviços</th>
+          <th>Lista de peças</th>
+          <th>Entrega</th>
+          <th>Status</th>
+          <th class="dir">Total</th>
+          <th class="dir"><span class="sr">Ações</span></th>
+        </tr>
+      </thead>
       <tbody>
         @for (o of filtradas(); track o.numero) {
           <tr>
             <td class="forte">#{{ o.numero }}</td>
             <td><div class="forte">{{ o.cliente }}</div><div class="sub">{{ o.veiculo }} · {{ o.placa }}</div></td>
-            <td>{{ o.servico }}</td>
+            <td>
+              @if (o.itensServico && o.itensServico.length > 0) {
+                @for (sv of o.itensServico; track $index) {
+                  <div class="item-tabela">{{ sv.quantidade }}x {{ sv.descricao }} <span class="mut">({{ (sv.quantidade * sv.precoUnitario) | currency: 'BRL' : 'symbol' : '1.2-2' }})</span></div>
+                }
+              } @else {
+                <div class="forte">{{ o.servico || '—' }}</div>
+              }
+              <div class="sub">Subtotal: {{ (o.valorServico ?? o.valor) | currency: 'BRL' : 'symbol' : '1.2-2' }}</div>
+            </td>
+            <td>
+              @if (o.itensPeca && o.itensPeca.length > 0) {
+                @for (p of o.itensPeca; track $index) {
+                  <div class="item-tabela">{{ p.quantidade }}x {{ p.nome }} <span class="mut">({{ (p.quantidade * p.precoUnitario) | currency: 'BRL' : 'symbol' : '1.2-2' }})</span></div>
+                }
+              } @else {
+                <div class="mut">{{ o.pecasTexto || 'Sem peças' }}</div>
+              }
+              <div class="sub">Subtotal: {{ (o.valorPecas ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' }}</div>
+            </td>
             <td class="mut">{{ o.entrega ? (o.entrega | date: 'dd/MM HH:mm') : '—' }}</td>
             <td>
               @if (podeEditar) {
@@ -79,30 +253,21 @@
               }
             </td>
             <td class="dir forte">
-              @if (podeEditar && valorEditando() === o.numero) {
-                <input class="valor-edicao" type="number" min="0" step="0.01" [ngModel]="novoValor()" [name]="'valor-' + o.numero" (ngModelChange)="novoValor.set($event === null ? null : +$event)" [attr.aria-label]="'Novo valor da OS ' + o.numero" />
-              } @else {
-                {{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}
-              }
+              {{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}
             </td>
             <td class="dir">
               @if (podeEditar) {
-                @if (valorEditando() === o.numero) {
-                  <div class="acoes-valor">
-                    <button class="btn sm" type="button" (click)="salvarValor(o.numero)">Salvar</button>
-                    <button class="btn sm" type="button" (click)="cancelarEdicaoValor()">Cancelar</button>
-                  </div>
-                } @else {
-                  <div class="acoes-valor">
-                    <button class="btn sm" type="button" (click)="editarValor(o.numero, o.valor)">Editar valor</button>
-                    <button class="lixo" type="button" (click)="excluir(o.numero)" [attr.aria-label]="'Excluir OS ' + o.numero"><app-icon name="trash" [size]="15" /></button>
-                  </div>
-                }
+                <div class="acoes-valor">
+                  <button class="btn sm" type="button" (click)="abrirGerenciarItens(o)">
+                    {{ ordemGerenciando() === o.numero ? 'Fechar itens' : 'Peças / Serviços' }}
+                  </button>
+                  <button class="lixo" type="button" (click)="excluir(o.numero)" [attr.aria-label]="'Excluir OS ' + o.numero"><app-icon name="trash" [size]="15" /></button>
+                </div>
               }
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="7" class="vazio">Nenhuma ordem de serviço encontrada.</td></tr>
+          <tr><td colspan="8" class="vazio">Nenhuma ordem de serviço encontrada.</td></tr>
         }
       </tbody>
     </table>

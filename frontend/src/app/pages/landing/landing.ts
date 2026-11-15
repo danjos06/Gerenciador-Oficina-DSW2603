@@ -3,7 +3,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { AuthService } from '../../services/auth';
-import { cepTemFormatoValido, consultarCep, mascararCep, montarLinkWhatsapp, soDigitos } from '../../shared/contato';
+import { cepTemFormatoValido, consultarCep, mascararCep, montarEnderecoCompleto, montarLinkWhatsapp, resumirEnderecoCep, soDigitos } from '../../shared/contato';
 import { Icon } from '../../shared/icon/icon';
 import { OficinaService } from '../../services/oficina';
 
@@ -37,9 +37,10 @@ export class Landing {
     { icone: 'message', titulo: 'Atendimento humano', desc: 'Fale diretamente com o mecânico responsável pelo seu veículo e acompanhe o andamento com clareza.' },
   ];
 
-  form = { nome: '', telefone: '', cep: '', placa: '', veiculo: '', servico: '' };
+  form = { nome: '', telefone: '', cep: '', numero: '', enderecoBase: '', placa: '', veiculo: '', servico: '' };
   enviado = signal(false);
   erroCep = signal('');
+  buscandoCep = signal(false);
   enviando = signal(false);
 
   rolar(id: string): void {
@@ -52,9 +53,35 @@ export class Landing {
     this.form.telefone = event.target.value;
   }
 
-  aoDigitarCep(): void {
+  async aoDigitarCep(): Promise<void> {
     this.form.cep = mascararCep(this.form.cep);
     this.erroCep.set('');
+
+    if (!cepTemFormatoValido(this.form.cep)) {
+      this.form.enderecoBase = '';
+      return;
+    }
+
+    const cepBuscado = this.form.cep;
+    this.buscandoCep.set(true);
+    try {
+      const info = await consultarCep(cepBuscado);
+      if (this.form.cep !== cepBuscado) return;
+      if (!info) {
+        this.form.enderecoBase = '';
+        this.erroCep.set('CEP não encontrado no ViaCEP.');
+        return;
+      }
+      this.form.enderecoBase = resumirEnderecoCep(info);
+    } catch {
+      if (this.form.cep === cepBuscado) {
+        this.form.enderecoBase = '';
+      }
+    } finally {
+      if (this.form.cep === cepBuscado) {
+        this.buscandoCep.set(false);
+      }
+    }
   }
 
   pedirServico(texto: string): void {
@@ -75,36 +102,58 @@ export class Landing {
     }
 
     const dados = { ...this.form };
-    const emailCliente = this.auth.sessao()?.email;
-    this.s.enviarSolicitacao(dados.nome, dados.telefone, dados.servico, dados.cep, dados.placa, dados.veiculo, emailCliente);
+    let baseEndereco = dados.enderecoBase;
 
-    const aba = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
-    let endereco = '';
     this.enviando.set(true);
     try {
-      const info = await consultarCep(dados.cep);
-      if (info) endereco = `${info.logradouro}, ${info.bairro} - ${info.localidade}/${info.uf}`;
+      if (!baseEndereco) {
+        const info = await consultarCep(dados.cep);
+        if (!info) {
+          this.erroCep.set('CEP não encontrado no ViaCEP. Verifique o CEP informado.');
+          return;
+        }
+        baseEndereco = resumirEnderecoCep(info);
+        this.form.enderecoBase = baseEndereco;
+      }
     } catch {
-      endereco = '';
+      // Caso a API externa do ViaCEP esteja inacessível, prossegue com o número e CEP informados
     } finally {
       this.enviando.set(false);
     }
+
+    const enderecoCompleto = montarEnderecoCompleto(baseEndereco, dados.numero, dados.cep);
+    const enderecoWhatsapp = dados.numero.trim()
+      ? `${baseEndereco}, nº ${dados.numero.trim()}`
+      : baseEndereco;
+
+    const emailCliente = this.auth.sessao()?.email;
+    this.s.enviarSolicitacao(
+      dados.nome,
+      dados.telefone,
+      dados.servico,
+      dados.cep,
+      dados.placa,
+      dados.veiculo,
+      emailCliente,
+      dados.numero,
+      enderecoCompleto,
+    );
 
     const link = montarLinkWhatsapp({
       nome: dados.nome,
       telefone: dados.telefone,
       cep: dados.cep,
-      endereco,
+      endereco: enderecoWhatsapp,
       placa: dados.placa,
       veiculo: dados.veiculo,
       servico: dados.servico,
     });
     if (typeof window !== 'undefined') {
-      if (aba) aba.location.href = link;
-      else window.location.assign(link);
+      const aba = window.open(link, '_blank');
+      if (!aba) window.location.assign(link);
     }
 
-    this.form = { nome: '', telefone: '', cep: '', placa: '', veiculo: '', servico: '' };
+    this.form = { nome: '', telefone: '', cep: '', numero: '', enderecoBase: '', placa: '', veiculo: '', servico: '' };
     f.resetForm(this.form);
     this.enviado.set(true);
     this.s.notificar('Solicitação enviada! Entraremos em contato em até 1 dia útil.');

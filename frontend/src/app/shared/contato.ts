@@ -40,6 +40,31 @@ export async function consultarCep(v: string): Promise<EnderecoCep | null> {
   }
 }
 
+export function resumirEnderecoCep(info: EnderecoCep): string {
+  const ruaBairro = [info.logradouro, info.bairro].filter(Boolean).join(', ');
+  const cidadeUf = [info.localidade, info.uf].filter(Boolean).join('/');
+  return [ruaBairro, cidadeUf].filter(Boolean).join(' - ');
+}
+
+export function montarEnderecoCompleto(baseEndereco: string, numero: string, cep: string): string {
+  const base = baseEndereco.trim();
+  const num = numero.trim();
+  const cepFormatado = mascararCep(cep);
+  const partes: string[] = [];
+
+  if (base) {
+    partes.push(num ? `${base}, nº ${num}` : base);
+  } else if (num) {
+    partes.push(`Nº ${num}`);
+  }
+
+  if (cepFormatado) {
+    partes.push(`CEP ${cepFormatado}`);
+  }
+
+  return partes.join(' - ');
+}
+
 export const WHATSAPP_OFICINA = '5511984568569';
 
 export interface DadosSolicitacao {

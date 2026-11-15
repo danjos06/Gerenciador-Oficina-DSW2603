@@ -173,14 +173,14 @@ export class Login {
     }
   }
 
-  enviar(f: NgForm): void {
+  async enviar(f: NgForm): Promise<void> {
     if (f.invalid) {
       f.control.markAllAsTouched();
       this.erro.set('Preencha os campos obrigatórios.');
       return;
     }
 
-    const perfil = this.auth.login(this.form.email, this.form.senha);
+    const perfil = await this.auth.autenticar(this.form.email, this.form.senha);
     if (perfil) {
       this.router.navigate(['/painel']);
       return;
