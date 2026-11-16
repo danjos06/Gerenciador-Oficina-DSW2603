@@ -1,6 +1,19 @@
+declare global {
+  interface Window {
+    env?: {
+      API_URL?: string;
+    };
+  }
+}
+
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8080',
+  get apiUrl(): string {
+    if (typeof window !== 'undefined' && window.env?.API_URL && window.env.API_URL.trim()) {
+      return window.env.API_URL.trim().replace(/\/+$/, '');
+    }
+    return 'http://localhost:8080';
+  },
   oficina: {
     nome: 'Oficina do Joe',
     cidade: 'São Paulo, SP',

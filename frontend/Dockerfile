@@ -14,7 +14,7 @@ FROM nginx:1.27-alpine
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 # script executado na subida do container: gera o env.js a partir das variáveis de ambiente
 COPY docker/gerar-env.sh /docker-entrypoint.d/40-gerar-env.sh
-RUN chmod +x /docker-entrypoint.d/40-gerar-env.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.d/40-gerar-env.sh && chmod +x /docker-entrypoint.d/40-gerar-env.sh
 
 COPY --from=build /app/dist/prototipo-oficina/browser /usr/share/nginx/html
 
