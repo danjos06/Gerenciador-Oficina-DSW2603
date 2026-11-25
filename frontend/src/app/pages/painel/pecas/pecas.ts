@@ -51,9 +51,11 @@ import { OficinaService } from '../../../services/oficina';
                 <td>{{ p.codigoFabricante || '—' }}</td>
                 <td class="dir forte">{{ p.precoVenda | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
                 @if (podeEditar) {
-                  <td class="acoes-linha">
-                    <button class="btn sm" type="button" (click)="editar(p)">Editar</button>
-                    <button class="btn sm excluir" type="button" (click)="excluir(p.id, p.nome)">Excluir</button>
+                  <td class="col-acoes">
+                    <div class="acoes-linha">
+                      <button class="btn sm" type="button" (click)="editar(p)">Editar</button>
+                      <button class="btn sm excluir" type="button" (click)="excluir(p.id, p.nome)">Excluir</button>
+                    </div>
                   </td>
                 }
               </tr>
@@ -74,7 +76,8 @@ import { OficinaService } from '../../../services/oficina';
     .acoes{display:flex;gap:8px;flex-wrap:wrap}
     .vazio{padding:16px 0;text-align:center}
     .lista{overflow:hidden;margin-top:18px}.rolagem{overflow-x:auto}.rolagem .tabela{min-width:560px}
-    .acoes-linha{display:flex;gap:6px}
+    .col-acoes{white-space:nowrap;width:1%}
+    .acoes-linha{display:inline-flex;align-items:center;gap:6px}
     .excluir{color:#a5362b}
     .erro{color:#a5362b;font-size:13px}
   `,

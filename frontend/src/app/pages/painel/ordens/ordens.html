@@ -132,8 +132,30 @@
         <h2>Peças e serviços da OS #{{ osSel.numero }} — {{ osSel.cliente }} ({{ osSel.veiculo }} · {{ osSel.placa }})</h2>
         <p class="pagina-sub">Adicione ou remova itens das listas de serviços e peças desta ordem de serviço.</p>
       </div>
-      <button class="btn sm" type="button" (click)="ordemGerenciando.set(null)">Fechar</button>
+      <div class="acoes-topo-gerenciar">
+        <button class="btn sm btn-whats" type="button" (click)="enviarWhatsapp(osSel)">
+          <app-icon name="message" [size]="15" /> Enviar OS no WhatsApp
+        </button>
+        <button class="btn sm" type="button" (click)="ordemGerenciando.set(null)">Fechar</button>
+      </div>
     </div>
+
+    @if (ofertaWhatsapp(); as oferta) {
+      @if (oferta.numero === osSel.numero) {
+        <div class="aviso-whats" role="status">
+          <div class="aviso-whats-texto">
+            <strong>{{ oferta.motivo }}.</strong>
+            <span>Deseja enviar a OS #{{ osSel.numero }} atualizada por WhatsApp para {{ osSel.cliente }}@if (telefoneDaOrdem(osSel)) { ({{ telefoneDaOrdem(osSel) }}) }?</span>
+          </div>
+          <div class="aviso-whats-acoes">
+            <button class="btn sm btn-whats" type="button" (click)="enviarOfertaWhatsapp()">
+              <app-icon name="message" [size]="15" /> Enviar agora
+            </button>
+            <button class="btn sm" type="button" (click)="ofertaWhatsapp.set(null)">Agora não</button>
+          </div>
+        </div>
+      }
+    }
 
     <div class="listas-os">
       <div class="bloco-itens">
@@ -256,14 +278,17 @@
               {{ o.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}
             </td>
             <td class="dir">
-              @if (podeEditar) {
-                <div class="acoes-valor">
+              <div class="acoes-valor">
+                <button class="btn sm btn-whats" type="button" (click)="enviarWhatsapp(o)" [attr.aria-label]="'Enviar OS ' + o.numero + ' por WhatsApp'" title="Enviar OS por WhatsApp para o cliente">
+                  <app-icon name="message" [size]="14" /> WhatsApp
+                </button>
+                @if (podeEditar) {
                   <button class="btn sm" type="button" (click)="abrirGerenciarItens(o)">
                     {{ ordemGerenciando() === o.numero ? 'Fechar itens' : 'Peças / Serviços' }}
                   </button>
                   <button class="lixo" type="button" (click)="excluir(o.numero)" [attr.aria-label]="'Excluir OS ' + o.numero"><app-icon name="trash" [size]="15" /></button>
-                </div>
-              }
+                }
+              </div>
             </td>
           </tr>
         } @empty {

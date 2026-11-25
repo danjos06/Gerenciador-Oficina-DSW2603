@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Icon } from '../../../shared/icon/icon';
+import { montarLinkWhatsappOrdem, normalizarTelefoneWhatsapp } from '../../../shared/contato';
 import { classeStatus } from '../../../shared/status';
 import { ItemPecaOS, ItemServicoOS, OrdemServico, STATUS_LISTA, StatusOS } from '../../../entities/oficina';
 import { AuthService } from '../../../services/auth';
@@ -24,6 +25,7 @@ export class Ordens {
   filtro = signal<StatusOS | 'Todas'>('Todas');
   formAberto = signal(false);
   ordemGerenciando = signal<number | null>(null);
+  ofertaWhatsapp = signal<{ numero: number; motivo: string } | null>(null);
   sugestoesBusca = signal<Array<{ cliente: string; veiculo: string; placa: string }>>([]);
 
   novo = this.vazio();
@@ -242,10 +244,12 @@ export class Ordens {
       precoUnitario: Number(this.edicaoServico.precoUnitario) || 0,
     });
     this.edicaoServico = { descricao: '', quantidade: 1, precoUnitario: null };
+    this.ofertaWhatsapp.set({ numero, motivo: `Serviço "${desc}" adicionado à OS` });
   }
 
   async removerServicoOrdem(numero: number, indice: number, itemId?: number): Promise<void> {
     await this.s.removerItemServicoDaOrdem(numero, indice, itemId);
+    this.ofertaWhatsapp.set({ numero, motivo: 'Lista de serviços da OS atualizada' });
   }
 
   async adicionarPecaOrdem(numero: number): Promise<void> {
@@ -257,10 +261,42 @@ export class Ordens {
       precoUnitario: Number(this.edicaoPeca.precoUnitario) || 0,
     });
     this.edicaoPeca = { nome: '', quantidade: 1, precoUnitario: null };
+    this.ofertaWhatsapp.set({ numero, motivo: `Peça/produto "${nome}" adicionado à OS` });
   }
 
   async removerPecaOrdem(numero: number, indice: number, itemId?: number): Promise<void> {
     await this.s.removerItemPecaDaOrdem(numero, indice, itemId);
+    this.ofertaWhatsapp.set({ numero, motivo: 'Lista de peças/produtos da OS atualizada' });
+  }
+
+  telefoneDaOrdem(o: OrdemServico): string {
+    return this.s.obterTelefoneCliente(o.cliente, o.placa);
+  }
+
+  enviarWhatsapp(o: OrdemServico, motivo?: string): void {
+    const telefone = this.telefoneDaOrdem(o);
+    if (!normalizarTelefoneWhatsapp(telefone)) {
+      this.s.notificar(`O cliente ${o.cliente} não possui telefone cadastrado. Atualize o cadastro na aba Clientes.`);
+      return;
+    }
+    const link = montarLinkWhatsappOrdem(o, telefone, motivo);
+    if (typeof window !== 'undefined') {
+      window.open(link, '_blank', 'noopener');
+    }
+    if (this.ofertaWhatsapp()?.numero === o.numero) {
+      this.ofertaWhatsapp.set(null);
+    }
+  }
+
+  enviarOfertaWhatsapp(): void {
+    const oferta = this.ofertaWhatsapp();
+    if (!oferta) return;
+    const ordem = this.s.ordens().find((o) => o.numero === oferta.numero);
+    if (!ordem) {
+      this.ofertaWhatsapp.set(null);
+      return;
+    }
+    this.enviarWhatsapp(ordem, oferta.motivo);
   }
 
   mudar(numero: number, status: string): void {

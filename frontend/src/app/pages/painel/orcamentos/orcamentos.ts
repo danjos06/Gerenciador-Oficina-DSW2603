@@ -3,11 +3,13 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth';
 import { OficinaService } from '../../../services/oficina';
+import { Icon } from '../../../shared/icon/icon';
+import { montarLinkWhatsappOrdem, normalizarTelefoneWhatsapp } from '../../../shared/contato';
 
 @Component({
   selector: 'app-orcamentos',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule],
+  imports: [CurrencyPipe, DatePipe, FormsModule, Icon],
   template: `
     <div class="cabeca">
       <div>
@@ -61,6 +63,27 @@ import { OficinaService } from '../../../services/oficina';
       </div>
 
       @if (ordemId() !== null) {
+        <div class="acoes">
+          <button class="btn sm btn-whats" type="button" (click)="enviarWhatsappOrdemSelecionada()">
+            <app-icon name="message" [size]="15" /> Enviar OS no WhatsApp
+          </button>
+        </div>
+
+        @if (ofertaWhatsapp(); as motivo) {
+          <div class="aviso-whats" role="status">
+            <div class="aviso-whats-texto">
+              <strong>{{ motivo }}.</strong>
+              <span>Deseja enviar a OS #{{ ordemId() }} atualizada por WhatsApp para o cliente?</span>
+            </div>
+            <div class="acoes">
+              <button class="btn sm btn-whats" type="button" (click)="enviarWhatsappOrdemSelecionada(motivo)">
+                <app-icon name="message" [size]="15" /> Enviar agora
+              </button>
+              <button class="btn sm" type="button" (click)="ofertaWhatsapp.set(null)">Agora não</button>
+            </div>
+          </div>
+        }
+
         <div class="resumo-os">
           <div><span>Total em Peças</span><strong>{{ resumo().totalPecas | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong></div>
           <div><span>Total em Serviços</span><strong>{{ resumo().totalServicos | currency: 'BRL' : 'symbol' : '1.2-2' }}</strong></div>
@@ -185,7 +208,11 @@ import { OficinaService } from '../../../services/oficina';
     .subcard{padding:14px;border:1px solid var(--line);border-radius:10px;display:grid;gap:12px;background:#f8fafc}
     .listas-os{display:grid;gap:18px}
     .erro,.excluir{color:#a5362b;font-size:13px}
-    .acoes{display:flex;gap:8px;flex-wrap:wrap}
+    .acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn-whats{border-color:#15803d;color:#166534;background:#f0fdf4;display:inline-flex;align-items:center;gap:6px}
+    .btn-whats:hover{background:#dcfce7}
+    .aviso-whats{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:10px;border:1px solid #86efac;background:#f0fdf4;color:#14532d;font-size:13px}
+    .aviso-whats-texto{display:grid;gap:2px}
     @media(max-width:560px){.calculadora{padding:16px}.resultado{align-items:flex-start;flex-direction:column}}
   `,
 })
@@ -199,6 +226,7 @@ export class Orcamentos {
   total = computed(() => (this.materiais() ?? 0) + (this.maoDeObra() ?? 0));
 
   ordemId = signal<number | null>(null);
+  ofertaWhatsapp = signal<string | null>(null);
   pecas = signal<Array<{ id: number; nome: string; quantidade: number; precoUnitario: number; origemPeca: string; statusPeca: string }>>([]);
   servicos = signal<Array<{ id: number; descricao: string; precoCobrado: number; extra: boolean; aprovadoCliente: boolean }>>([]);
   resumo = signal<{ totalServicos: number; totalPecas: number; valorTotalOrdem: number }>({ totalServicos: 0, totalPecas: 0, valorTotalOrdem: 0 });
@@ -214,6 +242,7 @@ export class Orcamentos {
 
   async selecionarOrdem(id: number | null): Promise<void> {
     this.ordemId.set(id);
+    this.ofertaWhatsapp.set(null);
     if (id === null) {
       this.pecas.set([]);
       this.servicos.set([]);
@@ -237,10 +266,12 @@ export class Orcamentos {
   async adicionarPeca(): Promise<void> {
     const id = this.ordemId();
     if (id === null || !this.formPeca.nome.trim() || this.formPeca.quantidade < 1 || this.formPeca.precoUnitario < 0) return;
+    const nome = this.formPeca.nome.trim();
     const ok = await this.s.adicionarPecaNaOrdemApi(id, this.formPeca);
     if (ok) {
       this.formPeca = { nome: '', quantidade: 1, precoUnitario: 0, origemPeca: 'OFICINA', statusPeca: 'INSTALADA' };
       await this.recarregarDetalhes(id);
+      this.ofertaWhatsapp.set(`Peça/produto "${nome}" adicionado à OS`);
     }
   }
 
@@ -248,12 +279,16 @@ export class Orcamentos {
     const id = this.ordemId();
     if (id === null) return;
     const ok = await this.s.removerPecaDaOrdemApi(id, itemId);
-    if (ok) await this.recarregarDetalhes(id);
+    if (ok) {
+      await this.recarregarDetalhes(id);
+      this.ofertaWhatsapp.set('Lista de peças/produtos da OS atualizada');
+    }
   }
 
   async adicionarServico(): Promise<void> {
     const id = this.ordemId();
     if (id === null || !this.formServico.descricao.trim() || this.formServico.precoCobrado < 0) return;
+    const desc = this.formServico.descricao.trim();
     const ok = await this.s.adicionarServicoDetalhadoNaOrdemApi(id, {
       descricao: this.formServico.descricao,
       precoCobrado: this.formServico.precoCobrado,
@@ -263,6 +298,7 @@ export class Orcamentos {
     if (ok) {
       this.formServico = { descricao: '', precoCobrado: 0 };
       await this.recarregarDetalhes(id);
+      this.ofertaWhatsapp.set(`Serviço "${desc}" adicionado à OS`);
     }
   }
 
@@ -270,6 +306,26 @@ export class Orcamentos {
     const id = this.ordemId();
     if (id === null) return;
     const ok = await this.s.removerServicoDaOrdemApi(id, itemId);
-    if (ok) await this.recarregarDetalhes(id);
+    if (ok) {
+      await this.recarregarDetalhes(id);
+      this.ofertaWhatsapp.set('Lista de serviços da OS atualizada');
+    }
+  }
+
+  enviarWhatsappOrdemSelecionada(motivo?: string): void {
+    const id = this.ordemId();
+    if (id === null) return;
+    const ordem = this.s.ordens().find((o) => o.numero === id);
+    if (!ordem) return;
+    const telefone = this.s.obterTelefoneCliente(ordem.cliente, ordem.placa);
+    if (!normalizarTelefoneWhatsapp(telefone)) {
+      this.s.notificar(`O cliente ${ordem.cliente} não possui telefone cadastrado. Atualize o cadastro na aba Clientes.`);
+      return;
+    }
+    const link = montarLinkWhatsappOrdem(ordem, telefone, motivo);
+    if (typeof window !== 'undefined') {
+      window.open(link, '_blank', 'noopener');
+    }
+    this.ofertaWhatsapp.set(null);
   }
 }

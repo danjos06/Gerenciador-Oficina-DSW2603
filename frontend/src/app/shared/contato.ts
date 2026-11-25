@@ -1,3 +1,5 @@
+import { OrdemServico } from '../entities/oficina';
+
 export interface EnderecoCep {
   cep: string;
   logradouro: string;
@@ -75,6 +77,77 @@ export interface DadosSolicitacao {
   placa: string;
   veiculo: string;
   servico: string;
+}
+
+export function normalizarTelefoneWhatsapp(telefone: string): string {
+  const d = soDigitos(telefone);
+  if (!d) return '';
+  if (d.length === 10 || d.length === 11) return `55${d}`;
+  return d;
+}
+
+function formatarMoedaBr(valor: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor) || 0);
+}
+
+export function montarLinkWhatsappOrdem(ordem: OrdemServico, telefoneCliente: string, motivoAlteracao?: string): string {
+  const numero = normalizarTelefoneWhatsapp(telefoneCliente);
+  const linhas: string[] = [
+    `*Oficina do Joe — Ordem de Serviço #${ordem.numero}*`,
+  ];
+
+  if (motivoAlteracao) {
+    linhas.push(`_Atualização: ${motivoAlteracao}_`);
+  }
+
+  linhas.push(
+    '',
+    `Cliente: ${ordem.cliente}`,
+    `Veículo: ${ordem.veiculo} (${ordem.placa})`,
+    `Status: ${ordem.status}`,
+  );
+
+  if (ordem.entrega) {
+    const dataEntrega = new Date(ordem.entrega);
+    if (!Number.isNaN(dataEntrega.getTime())) {
+      const formatada = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(dataEntrega);
+      linhas.push(`Previsão de entrega: ${formatada}`);
+    }
+  }
+
+  linhas.push('', '*Serviços:*');
+  if (ordem.itensServico && ordem.itensServico.length > 0) {
+    for (const sv of ordem.itensServico) {
+      linhas.push(`• ${sv.quantidade}x ${sv.descricao} — ${formatarMoedaBr(sv.quantidade * sv.precoUnitario)}`);
+    }
+  } else if (ordem.servico) {
+    linhas.push(`• ${ordem.servico}`);
+  } else {
+    linhas.push('• Nenhum serviço informado');
+  }
+  linhas.push(`Subtotal serviços: ${formatarMoedaBr(ordem.valorServico ?? ordem.valor)}`);
+
+  linhas.push('', '*Peças / Produtos:*');
+  if (ordem.itensPeca && ordem.itensPeca.length > 0) {
+    for (const p of ordem.itensPeca) {
+      linhas.push(`• ${p.quantidade}x ${p.nome} — ${formatarMoedaBr(p.quantidade * p.precoUnitario)}`);
+    }
+  } else if (ordem.pecasTexto) {
+    linhas.push(`• ${ordem.pecasTexto}`);
+  } else {
+    linhas.push('• Nenhuma peça vinculada');
+  }
+  linhas.push(`Subtotal peças: ${formatarMoedaBr(ordem.valorPecas ?? 0)}`);
+
+  linhas.push('', `*Valor total da OS: ${formatarMoedaBr(ordem.valor)}*`);
+
+  return `https://wa.me/${numero}?text=${encodeURIComponent(linhas.join('\n'))}`;
 }
 
 export function montarLinkWhatsapp(d: DadosSolicitacao): string {

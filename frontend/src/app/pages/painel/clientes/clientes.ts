@@ -76,9 +76,11 @@ import { cepTemFormatoValido, consultarCep, mascararCep, montarEnderecoCompleto,
                 <td class="dir">{{ c.os }}</td>
                 <td class="dir forte">{{ c.total | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
                 @if (podeEditar) {
-                  <td class="acoes-linha">
-                    <button class="btn sm" type="button" (click)="editar(c)">Editar</button>
-                    <button class="btn sm excluir" type="button" (click)="excluir(c.id, c.nome)">Excluir</button>
+                  <td class="col-acoes">
+                    <div class="acoes-linha">
+                      <button class="btn sm" type="button" (click)="editar(c)">Editar</button>
+                      <button class="btn sm excluir" type="button" (click)="excluir(c.id, c.nome)">Excluir</button>
+                    </div>
                   </td>
                 }
               </tr>
@@ -104,7 +106,8 @@ import { cepTemFormatoValido, consultarCep, mascararCep, montarEnderecoCompleto,
     .acoes-solicitacao{display:flex;gap:8px;flex-wrap:wrap}
     .vazio{padding:8px 0;text-align:center}
     .lista{overflow:hidden}.rolagem{overflow-x:auto}.rolagem .tabela{min-width:560px}
-    .acoes-linha{display:flex;gap:6px}
+    .col-acoes{white-space:nowrap;width:1%}
+    .acoes-linha{display:inline-flex;align-items:center;gap:6px}
     .excluir{color:#a5362b}
     .erro{color:#a5362b;font-size:13px}
   `,

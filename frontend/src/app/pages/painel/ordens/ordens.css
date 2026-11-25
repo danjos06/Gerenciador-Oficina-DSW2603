@@ -17,6 +17,12 @@
 .btn-rem { border: 0; background: transparent; color: #a5362b; font-size: 12px; cursor: pointer; padding: 2px 4px; }
 .btn-rem:hover { text-decoration: underline; }
 .topo-gerenciar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.acoes-topo-gerenciar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn-whats { border-color: #15803d; color: #166534; background: #f0fdf4; display: inline-flex; align-items: center; gap: 6px; }
+.btn-whats:hover { background: #dcfce7; }
+.aviso-whats { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 10px; border: 1px solid #86efac; background: #f0fdf4; color: #14532d; font-size: 13px; }
+.aviso-whats-texto { display: grid; gap: 2px; }
+.aviso-whats-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .acoes { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; }
 .total-previa { margin-right: auto; font-size: 14px; }
 .total-previa strong { color: var(--text); }

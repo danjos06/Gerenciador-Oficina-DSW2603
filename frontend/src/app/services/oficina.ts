@@ -517,6 +517,25 @@ export class OficinaService {
     void this.criarOrdemApi(nova, clienteAntes);
   }
 
+  obterTelefoneCliente(nomeCliente: string, placa?: string): string {
+    const nomeLimpo = (nomeCliente ?? '').trim().toLocaleLowerCase();
+    const placaLimpa = (placa ?? '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    if (placaLimpa) {
+      const porPlaca = this.registrosClientes().find((c) =>
+        c.veiculos.some((v) => v.placa.toUpperCase().replace(/[^A-Z0-9]/g, '') === placaLimpa),
+      );
+      if (porPlaca?.telefone?.trim()) return porPlaca.telefone.trim();
+    }
+
+    if (nomeLimpo) {
+      const porNome = this.registrosClientes().find((c) => c.nome.toLocaleLowerCase() === nomeLimpo);
+      if (porNome?.telefone?.trim()) return porNome.telefone.trim();
+    }
+
+    return '';
+  }
+
   async buscarClientePorNomeOuPlaca(termo: string, modo: 'cliente' | 'placa'): Promise<{ cliente: string; veiculo: string; placa: string } | null> {
     const q = termo.trim().toLocaleLowerCase();
     if (!q) return null;

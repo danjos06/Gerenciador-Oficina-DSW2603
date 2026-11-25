@@ -57,9 +57,11 @@ import { OficinaService } from '../../../services/oficina';
                 <td class="dir">{{ m.concluidas }}</td>
                 <td class="dir">{{ ticketMedio(m) | currency: 'BRL' : 'symbol' : '1.0-0' }}</td>
                 @if (podeEditar) {
-                  <td class="acoes-linha">
-                    <button class="btn sm" type="button" (click)="editar(m)">Editar</button>
-                    <button class="btn sm excluir" type="button" (click)="excluir(m)">Excluir</button>
+                  <td class="col-acoes">
+                    <div class="acoes-linha">
+                      <button class="btn sm" type="button" (click)="editar(m)">Editar</button>
+                      <button class="btn sm excluir" type="button" (click)="excluir(m)">Excluir</button>
+                    </div>
                   </td>
                 }
               </tr>
@@ -77,7 +79,9 @@ import { OficinaService } from '../../../services/oficina';
     .editor h2{font-size:16px;font-weight:500}
     .campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
     .campo input{min-width:0}
-    .acoes,.acoes-linha{display:flex;gap:6px;flex-wrap:wrap}
+    .acoes{display:flex;gap:6px;flex-wrap:wrap}
+    .col-acoes{white-space:nowrap;width:1%}
+    .acoes-linha{display:inline-flex;align-items:center;gap:6px}
     .erro{color:#a5362b;font-size:13px}
     .lista{margin-top:18px;overflow:hidden}
     .rolagem{overflow-x:auto}
